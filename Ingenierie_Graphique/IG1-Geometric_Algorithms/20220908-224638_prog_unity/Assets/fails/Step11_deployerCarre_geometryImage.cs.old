@@ -1,0 +1,457 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Step11_deployerCarre_geometryImage : MonoBehaviour {
+
+	Mesh3D mMesh;
+	List<int> mHole;
+
+	/// pour le deploiement
+	Mesh3D mDeployed;
+	/// autant de point quand dans mDeployed, ce sont les index correspondant dans mMesh
+	List<int> mDeployedCorrespondingVertices;
+	/// liste des faces de mMesh qui ont deja ete ajoutees
+	List<int> mDeployedFacesDone;
+	float mDeployedRadius = 500.0f;
+
+
+	/// https://stackoverflow.com/questions/2049582/how-to-determine-if-a-point-is-in-a-2d-triangle
+	public static bool PointInTriangleZ(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p)
+	{
+		var s = p0.y * p2.x - p0.x * p2.y + (p2.y - p0.y) * p.x + (p0.x - p2.x) * p.y;
+		var t = p0.x * p1.y - p0.y * p1.x + (p0.y - p1.y) * p.x + (p1.x - p0.x) * p.y;
+
+		if ((s < 0) != (t < 0))
+			return false;
+
+		var A = -p1.y * p2.x + p0.y * (p2.x - p1.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y;
+
+		return A < 0 ?
+			(s <= 0 && s + t >= A) :
+			(s >= 0 && s + t <= A);
+	}
+
+	// Use this for initialization
+	void Start()
+	{
+		// positionner camera
+		var lCamera = CameraHlp.setup3DCamera();
+		lCamera.transform.position = new Vector3(0,34,-68);
+		lCamera.backgroundColor = Color.cyan;
+
+
+		var lGo = Resources.Load("GermanShephardLowPoly") as GameObject;
+		if( null == lGo )
+		{
+			Debug.LogError("Impossible de trouver le modele 3D a charger");
+			enabled = false;
+			return;
+		}
+
+		MeshFilter meshFilter = lGo.GetComponentInChildren<MeshFilter>();
+		if( null == meshFilter || null == meshFilter.sharedMesh)
+		{
+			Debug.LogError("L'objet n'a pas de mesh ou de meshfilter");
+			enabled = false;
+			return;
+		}
+
+		mMesh = new Mesh3D();
+		mMesh.mName = "MeshThatWillBeCut";
+		mMesh.initFrom( meshFilter.sharedMesh );
+		mMesh.mergePointsAtSamePositions();
+		mMesh.scale( 5 );
+
+		// faire un cut
+		{
+			// definir l'ensemble des edges du cut
+			var lCut = new List<Edge>();
+			lCut.Add( new Edge( 20, 19) );
+			lCut.Add( new Edge( 19, 18) );
+
+			lCut.Add( new Edge( 18, 24) );
+			lCut.Add( new Edge( 24, 25) );
+			//lCut.Add( new Link( 24, 23) );
+
+			// effectuer le cut, en doublonnant des sommets, et donc creant un trou dans le mesh ferme
+			Step8_createCut_geometryImage.createCut( lCut, mMesh );
+		}
+
+		// trouver la succession de sommet qui forme une boucle
+		{
+			var lHole = Step9_findHole_geometryImage.sFindHole( mMesh );
+			mHole = lHole;
+
+			// afficher un petit message a ce sujet
+			string message = "Le hole contient les sommets : (";
+			for(int h = 0; h < lHole.Count; ++h)
+			{
+				message += (" "+lHole[h].ToString() );
+			}
+			message += ")";
+			Debug.Log(message);
+
+
+			// changer la couleur des sommets non utilises
+			mMesh.visual_update();
+			lHole.ForEach( delegate( int pIndexVertex ){  mMesh.visual_setPointColor( pIndexVertex, Color.blue); });
+
+			// aide visuelle
+			// reduire un petit peu la taille de tous les triangles qui touchent le hole, de maniere 
+			// a voir mieux le trou apparaitre
+			for(int t = 0; t < mMesh.mFaces.Count; ++t)
+			{
+				var lTriangle = mMesh.mFaces[t];
+				foreach( int h in lHole )
+				{
+					if( lTriangle.has( h ))
+					{
+						Vector3 A3D = mMesh.mPoints[ lTriangle.a ];
+						Vector3 B3D = mMesh.mPoints[ lTriangle.b ];
+						Vector3 C3D = mMesh.mPoints[ lTriangle.c ];
+						Vector3 center = (A3D + B3D + C3D) / 3.0f;
+						Vector3 newA = center + (A3D - center) * 0.3f;
+						Vector3 newB = center + (B3D - center) * 0.3f;
+						Vector3 newC = center + (C3D - center) * 0.3f;
+
+						mMesh.mPoints[lTriangle.a] = newA;
+						mMesh.mPoints[lTriangle.b] = newB;
+						mMesh.mPoints[lTriangle.c] = newC;
+						break;
+					}
+				}
+			}
+		}
+
+		// afficher notre modele 3D
+		mMesh.visual_update();
+
+		// creons un cercle a partir de notre hole
+		mDeployed = new Mesh3D();
+		mDeployed.mName = "deployed";
+		mDeployedFacesDone = new List<int>();
+		mDeployedCorrespondingVertices = new List<int>();
+
+		for(int h = 0; h < mHole.Count; ++h)
+		{
+			float angle_deg = ((float)h/(float)mHole.Count) * 360.0f;
+			float angle_rad = angle_deg * Mathf.Deg2Rad; 
+			Vector3 lNewPoint = new Vector3( Mathf.Cos( angle_rad ), Mathf.Sin( angle_rad), 0.0f)* mDeployedRadius;
+
+			mDeployed.mPoints.Add( lNewPoint );
+			mDeployedCorrespondingVertices.Add( h ); 
+		}
+	}
+
+	void Update()
+	{
+		// ajouter point si possible
+		while( mMesh.mFaces.Count != mDeployed.mFaces.Count )
+		{
+			// rechercher d'abord les faces qui sont ajoutables s'il y a deja 2 liens presents dans mDeployed
+			bool anyAddDone = false;
+			var lFacesO = mMesh.mFaces;
+			for(int i = 0; i < lFacesO.Count; ++i)
+			{
+				if( mDeployedFacesDone.Contains(i))
+				{
+					// deja ajoute
+					continue;
+				}
+
+				var lFaceO = lFacesO[i];
+				// peut on l'ajouter?
+				// y a-t-il deja 2 de ses edges dans mDeployed ?
+				int hasA = mDeployedCorrespondingVertices.IndexOf( lFaceO.a );
+				int hasB = mDeployedCorrespondingVertices.IndexOf( lFaceO.b );
+				int hasC = mDeployedCorrespondingVertices.IndexOf( lFaceO.c );
+
+				// a-t-on juste besoin d'ajouter un lien?
+				if( hasA != -1 && hasB  != -1 && hasC  != -1)
+				{
+					// oui faire juste le lien
+					mDeployed.mFaces.Add( new Triplet(hasA, hasB, hasC) );
+					mDeployedFacesDone.Add( i);
+					// OK!
+					Debug.Log("ajoute un simple lien pour finaliser un triangle : original : "+ lFaceO);
+					anyAddDone = true;
+					break;
+				}
+			}
+
+			if (anyAddDone)
+			{
+				break;
+			}
+
+			// maintenant on va devoir ajouter des sommets, car il n'y a qu'un seul edge present
+			for(int faceO = 0; faceO < lFacesO.Count; ++faceO)
+			{
+				if( mDeployedFacesDone.Contains(faceO))
+				{
+					// deja ajoute
+					continue;
+				}
+
+				var lFaceO = lFacesO[faceO];
+				int indexA = mDeployedCorrespondingVertices.IndexOf( lFaceO.a );
+				int indexB = mDeployedCorrespondingVertices.IndexOf( lFaceO.b );
+				int indexC = mDeployedCorrespondingVertices.IndexOf( lFaceO.c );
+
+				if(tryAddThirdVertex( indexA, indexB, lFaceO.c, faceO))
+				{
+					anyAddDone = true;
+					break;
+				}
+
+				if(tryAddThirdVertex( indexB, indexC, lFaceO.a, faceO))
+				{
+					anyAddDone = true;
+					break;
+				}
+
+				if(tryAddThirdVertex( indexC, indexA, lFaceO.b, faceO))
+				{
+					anyAddDone = true;
+					break;
+				}
+
+			}
+
+			// je fais un breakable
+			break;
+		}
+
+
+		mDeployed.visual_update();
+	}
+
+
+	/// fonction d'aide principale, pour ajouter dans mDeployed le sommet originalVertxIndex venu de mMesh
+	/// indexDeployedV1 : index dans deployed du premier sommet
+	/// indexDeployedV2 : index dans deployed du deuxieme sommet
+	/// originalVertxIndex : index dans le non-deployed du troisieme sommet, celui qu'on doit ajouter
+	public bool tryAddThirdVertex(int indexDeployedV1, int indexDeployedV2, int originalVertxIndex, int originalFaceIndex)
+	{
+		// TODO : calculer les distances de notre point a chacunes des limites du hole.
+		//  cela nous permettra ensuite de faire un barycentre de tout cela.
+
+
+		float stepSize = 5.0f;
+
+		int hasA = indexDeployedV1;
+		int hasB = indexDeployedV2;
+
+		if( hasA == -1 || hasB == -1)
+		{
+			return false;
+		}
+
+		// trouver la zone vide : d'un cote ou de l'autre de AB (sachant qu'on est sur le plan Z==0 de toute facon)
+
+		//-1/ trouver parmi ceux qui ont ete ajoutes dans deployed le triangle qui l'utilise.
+		//        si le triangle n'est pas present => c'est une bordure, il faut donc se rapprocher du centre tout simplement.
+		//-2/ trouver l'orientation qui fait aller a l'exterieur du triangle, et y aller.
+
+		Vector3 lADeployed = mDeployed.mPoints[hasA];
+		Vector3 lBDeployed = mDeployed.mPoints[hasB];
+		Vector3 lCenterAB = (lADeployed + lBDeployed)*0.5f;
+		Vector3 lCDeployed = Vector3.zero;
+
+		var lFaceUsingAB = mDeployed.mFaces.Find( (f)=>{ return f.hasBoth( indexDeployedV1 ,indexDeployedV2 );} );
+		if( lFaceUsingAB == null )
+		{
+			// on est sur une bordure, on doit juste se rapprocher du centre
+			lCDeployed = lCenterAB - (lCenterAB.normalized * stepSize );
+		}else{
+			// trouver l'indice de notre point oppose deja existant
+			bool oppositeIsA = (lFaceUsingAB.a != indexDeployedV1 && lFaceUsingAB.a != indexDeployedV2);
+			bool oppositeIsB = (lFaceUsingAB.b != indexDeployedV1 && lFaceUsingAB.b != indexDeployedV2);
+			bool oppositeIsC = (lFaceUsingAB.c != indexDeployedV1 && lFaceUsingAB.c != indexDeployedV2);
+
+
+			Vector3 lABDeployed = lBDeployed - lADeployed;
+			Vector3 lPerpendiculairToAB = Vector3.Cross( lABDeployed, new Vector3(0,0,1));
+			lPerpendiculairToAB.Normalize();
+			Vector3 lMiniPerpendiculairToAB_1 =  lPerpendiculairToAB * stepSize ;
+			Vector3 lMiniPerpendiculairToAB_2 = -lPerpendiculairToAB * stepSize ;
+
+
+			Vector3 oppositePoint = Vector3.zero;
+			if( oppositeIsA )
+			{
+				oppositePoint = mDeployed.mPoints[ lFaceUsingAB.a ];
+			}
+			if( oppositeIsB )
+			{
+				oppositePoint = mDeployed.mPoints[ lFaceUsingAB.b ];
+			}
+			if( oppositeIsC )
+			{
+				oppositePoint = mDeployed.mPoints[ lFaceUsingAB.c ];
+			}
+
+			if( Vector3.Dot( lMiniPerpendiculairToAB_1, oppositePoint - lCenterAB)> 0)
+			{
+				lCDeployed = lCenterAB + lMiniPerpendiculairToAB_2;
+			}else{
+				lCDeployed = lCenterAB + lMiniPerpendiculairToAB_1;
+			}
+
+		}
+
+		var lNewPoint = lCDeployed;
+		mDeployed.mPoints.Add( lNewPoint );
+
+
+		//mDeployedCorrespondingVertices.Add( lFaceO.c );
+		mDeployedCorrespondingVertices.Add( originalVertxIndex);
+		int hasC = (mDeployedCorrespondingVertices.Count - 1);
+
+
+		// ajouter notre schmilblick
+		mDeployed.mFaces.Add( new Triplet(hasA, hasB, hasC) );
+		mDeployedFacesDone.Add( originalFaceIndex );
+
+		Debug.Log("ajoute un vertex pour finaliser un triangle : original : "+ mMesh.mFaces[originalFaceIndex]);
+
+		return true;
+	}
+
+
+
+	/// fonction d'aide principale, pour ajouter dans mDeployed le sommet originalVertxIndex venu de mMesh
+	/// indexDeployedV1 : index dans deployed du premier sommet
+	/// indexDeployedV2 : index dans deployed du deuxieme sommet
+	/// originalVertxIndex : index dans le non-deployed du troisieme sommet, celui qu'on doit ajouter
+	public bool tryAddThirdVertex_V0(int indexDeployedV1, int indexDeployedV2, int originalVertxIndex, int originalFaceIndex)
+	{
+		float stepSize = 5.0f;
+
+		int hasA = indexDeployedV1;
+		int hasB = indexDeployedV2;
+
+		if( hasA == -1 || hasB == -1)
+		{
+			return false;
+		}
+
+		// trouver la zone vide : d'un cote ou de l'autre de AB (sachant qu'on est sur le plan Z==0 de toute facon)
+
+		//-1/ trouver parmi ceux qui ont ete ajoutes dans deployed le triangle qui l'utilise.
+		//        si le triangle n'est pas present => c'est une bordure, il faut donc se rapprocher du centre tout simplement.
+		//-2/ trouver l'orientation qui fait aller a l'exterieur du triangle, et y aller.
+
+		Vector3 lADeployed = mDeployed.mPoints[hasA];
+		Vector3 lBDeployed = mDeployed.mPoints[hasB];
+		Vector3 lCenterAB = (lADeployed + lBDeployed)*0.5f;
+		Vector3 lCDeployed = Vector3.zero;
+
+		var lFaceUsingAB = mDeployed.mFaces.Find( (f)=>{ return f.hasBoth( indexDeployedV1 ,indexDeployedV2 );} );
+		if( lFaceUsingAB == null )
+		{
+			// on est sur une bordure, on doit juste se rapprocher du centre
+			lCDeployed = lCenterAB - (lCenterAB.normalized * stepSize );
+		}else{
+			// trouver l'indice de notre point oppose deja existant
+			bool oppositeIsA = (lFaceUsingAB.a != indexDeployedV1 && lFaceUsingAB.a != indexDeployedV2);
+			bool oppositeIsB = (lFaceUsingAB.b != indexDeployedV1 && lFaceUsingAB.b != indexDeployedV2);
+			bool oppositeIsC = (lFaceUsingAB.c != indexDeployedV1 && lFaceUsingAB.c != indexDeployedV2);
+
+
+			Vector3 lABDeployed = lBDeployed - lADeployed;
+			Vector3 lPerpendiculairToAB = Vector3.Cross( lABDeployed, new Vector3(0,0,1));
+			lPerpendiculairToAB.Normalize();
+			Vector3 lMiniPerpendiculairToAB_1 =  lPerpendiculairToAB * stepSize ;
+			Vector3 lMiniPerpendiculairToAB_2 = -lPerpendiculairToAB * stepSize ;
+
+
+			Vector3 oppositePoint = Vector3.zero;
+			if( oppositeIsA )
+			{
+				oppositePoint = mDeployed.mPoints[ lFaceUsingAB.a ];
+			}
+			if( oppositeIsB )
+			{
+				oppositePoint = mDeployed.mPoints[ lFaceUsingAB.b ];
+			}
+			if( oppositeIsC )
+			{
+				oppositePoint = mDeployed.mPoints[ lFaceUsingAB.c ];
+			}
+
+			if( Vector3.Dot( lMiniPerpendiculairToAB_1, oppositePoint - lCenterAB)> 0)
+			{
+				lCDeployed = lCenterAB + lMiniPerpendiculairToAB_2;
+			}else{
+				lCDeployed = lCenterAB + lMiniPerpendiculairToAB_1;
+			}
+
+		}
+
+		var lNewPoint = lCDeployed;
+		mDeployed.mPoints.Add( lNewPoint );
+
+
+		//mDeployedCorrespondingVertices.Add( lFaceO.c );
+		mDeployedCorrespondingVertices.Add( originalVertxIndex);
+		int hasC = (mDeployedCorrespondingVertices.Count - 1);
+
+
+		// ajouter notre schmilblick
+		mDeployed.mFaces.Add( new Triplet(hasA, hasB, hasC) );
+		mDeployedFacesDone.Add( originalFaceIndex );
+
+		Debug.Log("ajoute un vertex pour finaliser un triangle : original : "+ mMesh.mFaces[originalFaceIndex]);
+
+		return true;
+	}
+
+
+}
+
+
+
+/*
+			Vector3 lCenterAB = (lADeployed + lBDeployed)*0.5f;
+			Vector3 lCDeployed_proposition1 = lCenterAB + lMiniPerpendiculairToAB_1;
+			Vector3 lCDeployed_proposition2 = lCenterAB + lMiniPerpendiculairToAB_2;
+
+			Vector3 lCDeployed = lCenterAB * 0.99f; // le rapprocher du centre du cercle
+			*/
+/*
+Vector3? lCDeployed = null;
+
+// on ne veut pas que cela aille hors du cercle
+if( lCDeployed_proposition1.magnitude > mDeployedRadius )
+{
+	lCDeployed = lCDeployed_proposition2;
+}else if( lCDeployed_proposition2.magnitude > mDeployedRadius )
+{
+	lCDeployed = lCDeployed_proposition1;
+}
+
+if( lCDeployed == null )
+{
+	// verifier lequel des deux ne touche rien (normalement on devrait faire une boucle avec des gros et petits pas... ici je fais des pas mini pour faire un raccourci)
+	bool isOutTris_1 = mDeployed.mFaces.TrueForAll( (pTriplet) =>{ 
+		var lPoints = mDeployed.mPoints;
+		return !PointInTriangleZ( lPoints[pTriplet.a], lPoints[pTriplet.b], lPoints[pTriplet.c], lCDeployed_proposition1);
+	} );
+
+	bool isOutTris_2 = mDeployed.mFaces.TrueForAll( (pTriplet) =>{ 
+		var lPoints = mDeployed.mPoints;
+		return !PointInTriangleZ( lPoints[pTriplet.a], lPoints[pTriplet.b], lPoints[pTriplet.c], lCDeployed_proposition1);
+	} );
+
+	lCDeployed = isOutTris_1 ? lCDeployed_proposition1 : lCDeployed_proposition2;
+
+	if( !isOutTris_1 && !isOutTris_2 )
+	{
+		Debug.LogWarning("les deux propositions touchent les triangles!");
+	}
+}
+
+Vector3 lNewPoint = lCDeployed.Value;
+*/

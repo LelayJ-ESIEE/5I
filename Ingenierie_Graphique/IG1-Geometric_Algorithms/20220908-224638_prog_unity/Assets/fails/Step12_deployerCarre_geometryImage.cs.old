@@ -1,0 +1,309 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Step12_deployerCarre_geometryImage : MonoBehaviour {
+
+	Mesh3D mMesh;
+	List<int> mHole;
+	Vector3[] mHole3D;
+	public float mDeployedRadius = 50.0f;
+	public float[] mOriginalLineLengths;
+
+	public float mProgressiveForce = 1.0f;
+
+	// Use this for initialization
+	void Start()
+	{
+		// positionner camera
+		var lCamera = CameraHlp.setup3DCamera();
+		lCamera.transform.position = new Vector3(0,34,-68);
+		lCamera.backgroundColor = Color.cyan;
+
+
+		var lGo = Resources.Load("GermanShephardLowPoly") as GameObject;
+		if( null == lGo )
+		{
+			Debug.LogError("Impossible de trouver le modele 3D a charger");
+			enabled = false;
+			return;
+		}
+
+		MeshFilter meshFilter = lGo.GetComponentInChildren<MeshFilter>();
+		if( null == meshFilter || null == meshFilter.sharedMesh)
+		{
+			Debug.LogError("L'objet n'a pas de mesh ou de meshfilter");
+			enabled = false;
+			return;
+		}
+
+		mMesh = new Mesh3D();
+		mMesh.mName = "MeshThatWillBeCut";
+		mMesh.initFrom( meshFilter.sharedMesh );
+		mMesh.mergePointsAtSamePositions();
+		mMesh.scale( 5 );
+
+		// faire un cut
+		{
+			// definir l'ensemble des edges du cut
+			var lCut = new List<Edge>();
+			lCut.Add( new Edge( 20, 19) );
+			lCut.Add( new Edge( 19, 18) );
+
+			lCut.Add( new Edge( 18, 24) );
+			lCut.Add( new Edge( 24, 25) );
+			//lCut.Add( new Link( 24, 23) );
+
+			// effectuer le cut, en doublonnant des sommets, et donc creant un trou dans le mesh ferme
+			Step8_createCut_geometryImage.createCut( lCut, mMesh );
+		}
+
+		// trouver la succession de sommet qui forme une boucle
+		{
+			mHole =  Step9_findHole_geometryImage.sFindHole( mMesh );
+
+			// afficher un petit message a ce sujet
+			string message = "Le hole contient les sommets : (";
+			for(int h = 0; h < mHole.Count; ++h)
+			{
+				message += (" "+mHole[h].ToString() );
+			}
+			message += ")";
+			Debug.Log(message);
+		}
+
+		// optionnellement : supprimer les vertex qui ne servent plus
+		{
+			List<int> removedVertices = Step8_createCut_geometryImage.sRemoveUnusedVertex( mMesh );
+
+			// les vertex supprimes ont crees des decallages dans nos indices de hole, il faut le prendre en compte
+			for(int i = 0; i < removedVertices.Count; ++i)
+			{
+				int removedVertex = removedVertices[i];
+				for(int h = 0; h < mHole.Count; ++h)
+				{
+					int previousHoleVertex = mHole[h];
+					if( removedVertex < previousHoleVertex )
+					{
+						mHole[h] = previousHoleVertex - 1;
+					}
+				}
+			}
+		}
+
+		// changer la couleur des sommets du hole
+		mMesh.visual_update();
+		mHole.ForEach( delegate( int pIndexVertex ){  
+			Debug.Log("changer la couleur de "+pIndexVertex);
+			mMesh.visual_setPointColor( pIndexVertex, Color.blue); 
+		});
+
+
+		// noter la taille originale des liens
+		mOriginalLineLengths = new float[ 3 * mMesh.mFaces.Count ]; 
+		for(int f = 0; f < mMesh.mFaces.Count; ++f )
+		{
+			var lFace = mMesh.mFaces[f];
+			mOriginalLineLengths[f*3] = lFace.getLine3D(mMesh.mPoints, 0).getLength();
+			mOriginalLineLengths[f*3+1] = lFace.getLine3D(mMesh.mPoints, 1).getLength();
+			mOriginalLineLengths[f*3+2] = lFace.getLine3D(mMesh.mPoints, 2).getLength();
+		}
+
+
+		// afficher notre modele 3D
+		mMesh.visual_update();
+	}
+
+	void Update()
+	{
+		mMesh.visual_updateFromScene();
+		mMesh.visual_update();
+	}
+
+	void OnGUI()
+	{
+		if( GUILayout.Button("deployHoleCircle"))
+		{
+			deployHoleCircle();
+			mMesh.visual_update();
+		}
+
+		if( GUILayout.Button("deploy"))
+		{
+			deployMesh();
+			mMesh.visual_update();
+		}
+
+		if( GUILayout.RepeatButton("progressive"))
+		{
+			updateProgressive();
+		}
+	}
+
+	public void deployHoleCircle()
+	{
+		// creons un cercle a partir de notre hole
+		mHole3D = new Vector3[mHole.Count];
+		for(int h = 0; h < mHole.Count; ++h)
+		{
+			int indexVertex = mHole[h];
+
+			float angle_deg = ((float)h/(float)mHole.Count) * 360.0f;
+			float angle_rad = angle_deg * Mathf.Deg2Rad; 
+			Vector3 lNewPoint = new Vector3( Mathf.Cos( angle_rad ), Mathf.Sin( angle_rad), 0.0f)* mDeployedRadius;
+
+			mMesh.mPoints[ indexVertex ] = lNewPoint;
+			mHole3D[h] = lNewPoint;
+		}
+	}
+
+
+	public void deployMesh()
+	{
+		deployHoleCircle();
+
+
+		// pour chaque point, calculer sa distance a chaque point du hole.
+		for(int v = 0; v < mMesh.mPoints.Count; ++v)
+		{
+			if( mHole.Contains(v))
+			{
+				continue;
+			}
+
+			var lPointMesh = mMesh.mPoints[v];
+			Vector3 sum_amount3D = Vector3.zero;
+			float masseTotale = 0.0f;
+			for(int h = 0; h < mHole3D.Length; ++h)
+			{
+				Vector3 lHolePoint3D = mHole3D[h];
+				float distance = (lPointMesh - lHolePoint3D).magnitude;
+
+				//float quantity = distance;
+				float quantity = 1.0f/distance;
+
+				Vector3 amount1Point = lHolePoint3D * quantity;
+				sum_amount3D += amount1Point;
+
+				masseTotale += quantity;
+			}
+
+			// le placer en coordonnees barycentriques
+			sum_amount3D = sum_amount3D / masseTotale;
+
+
+			mMesh.mPoints[v] = sum_amount3D;
+		}
+	}
+
+
+	public void updateProgressive()
+	{
+		var lPoints = mMesh.mPoints;
+		for(int f = 0; f < mMesh.mFaces.Count; ++f )
+		{
+			var lFace = mMesh.mFaces[f];
+
+			float originalSize0 = mOriginalLineLengths[f*3];
+			float originalSize1 = mOriginalLineLengths[f*3+1];
+			float originalSize2 = mOriginalLineLengths[f*3+2];
+			float sumOriginalSize = originalSize0 + originalSize1 + originalSize2;
+
+			var p0 = lFace.getPoint3D( lPoints, 0);
+			var p1 = lFace.getPoint3D( lPoints, 1);
+			var p2 = lFace.getPoint3D( lPoints, 2);
+
+			Line3D lLine0 = lFace.getLine3D( lPoints, 0);
+			Line3D lLine1 = lFace.getLine3D( lPoints, 1);
+			Line3D lLine2 = lFace.getLine3D( lPoints, 2);
+
+			float newSize0 = lLine0.getLength();
+			float newSize1 = lLine1.getLength();
+			float newSize2 = lLine2.getLength();
+			float sumNewSize = newSize0 + newSize1 + newSize2;
+
+			/*
+			// eviter les super positions
+			if( (p0 - p1).magnitude <1.0f )
+			{
+				p0 = p1 + p1.normalized * 1.0f;
+				break;
+			}
+			if( (p0 - p2).magnitude <1.0f )
+			{
+				p0 = p2 + p2.normalized * 1.0f;
+				break;
+			}
+			if( (p1 - p2).magnitude <1.0f )
+			{
+				p1 = p2 + p2.normalized * 1.0f;
+				break;
+			}
+			*/
+
+			/*
+			// ecarter par rapport au centre
+			{
+				var center3D = (p0 + p2 + p1)/3.0f ;
+				Vector3 vecFromCenter0 =(p0-center3D);
+				Vector3 vecFromCenter1 =(p1-center3D);
+				Vector3 vecFromCenter2 =(p2-center3D);
+				float distFromCenter0 = vecFromCenter0.magnitude;
+				float distFromCenter1 = vecFromCenter1.magnitude;
+				float distFromCenter2 = vecFromCenter2.magnitude;
+
+				float forceEcart = 1.0f;
+				p0 = p0 + (vecFromCenter0 * forceEcart / distFromCenter0) ;
+				p1 = p1 + (vecFromCenter1 * forceEcart / distFromCenter1) ;
+				p2 = p2 + (vecFromCenter2 * forceEcart / distFromCenter2) ;
+			}
+
+
+			// ramener vers le centre si se rapproche trop des bords
+			{
+				float radiusDanger0 = mDeployedRadius - p0.magnitude;
+				float radiusDanger1 = mDeployedRadius - p1.magnitude;
+				float radiusDanger2 = mDeployedRadius - p2.magnitude;
+
+				p0 = p0 + p0.normalized * (radiusDanger0 / mDeployedRadius);
+				p1 = p1 + p1.normalized * (radiusDanger1 / mDeployedRadius);
+				p2 = p2 + p2.normalized * (radiusDanger2 / mDeployedRadius);
+			}*/
+
+			// essayer de retrouver le ratio original des longueurs
+			float ratioOrig0 = originalSize0 / sumOriginalSize;
+			float ratioOrig1 = originalSize1 / sumOriginalSize;
+			float ratioOrig2 = originalSize2 / sumOriginalSize;
+
+			float ratioNew0 = newSize0 / sumNewSize;
+			float ratioNew1 = newSize1 / sumNewSize;
+			float ratioNew2 = newSize2 / sumNewSize;
+
+			float epsilon = 0.5f;
+
+			float aggrandissement0 = epsilon+ (ratioOrig0 - ratioNew0) * 3.0f;
+			float aggrandissement1 = epsilon+ (ratioOrig1 - ratioNew1) * 3.0f;
+			float aggrandissement2 = epsilon+ (ratioOrig2 - ratioNew2) * 3.0f;
+			Vector3 middle0 = (p0 + p1) *0.5f;
+			Vector3 middle1 = (p1 + p2) *0.5f;
+			Vector3 middle2 = (p2 + p0) *0.5f;
+
+			p0 = middle0 + (p0 - middle0) * aggrandissement0 * mProgressiveForce ;
+			p1 = middle1 + (p1 - middle1) * aggrandissement1 * mProgressiveForce ;
+			p2 = middle2 + (p2 - middle2) * aggrandissement2 * mProgressiveForce ;
+
+			mMesh.mPoints[lFace.a] = p0;
+			mMesh.mPoints[lFace.b] = p1;
+			mMesh.mPoints[lFace.c] = p2;
+		}
+
+		// force le hole a sa position de base
+		for(int h = 0; h < mHole.Count; ++h)
+		{
+			mMesh.mPoints[mHole[h]] = mHole3D[h];
+		}
+
+		mMesh.visual_update();
+	}
+
+}

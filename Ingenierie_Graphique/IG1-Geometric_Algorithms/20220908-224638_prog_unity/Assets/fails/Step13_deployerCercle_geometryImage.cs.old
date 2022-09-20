@@ -1,0 +1,322 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Step13_deployerCarre_geometryImage : MonoBehaviour {
+
+	Mesh3D mMesh;
+	List<int> mHole;
+	Vector3[] mHole3D;
+	public float mDeployedRadius = 500.0f;
+	public List<float> mOriginalLineLengths;
+	public List<Edge> mEdges;
+	public float mProgressiveForce = 1.0f;
+	List<float[]> mVertexDistancesFromHoles;
+
+
+	// Use this for initialization
+	void Start()
+	{
+		// positionner camera
+		var lCamera = CameraHlp.setup3DCamera();
+		lCamera.transform.position = new Vector3(0,34,-68);
+		lCamera.backgroundColor = Color.cyan;
+
+
+		var lGo = Resources.Load("GermanShephardLowPoly") as GameObject;
+		if( null == lGo )
+		{
+			Debug.LogError("Impossible de trouver le modele 3D a charger");
+			enabled = false;
+			return;
+		}
+
+		MeshFilter meshFilter = lGo.GetComponentInChildren<MeshFilter>();
+		if( null == meshFilter || null == meshFilter.sharedMesh)
+		{
+			Debug.LogError("L'objet n'a pas de mesh ou de meshfilter");
+			enabled = false;
+			return;
+		}
+
+		mMesh = new Mesh3D();
+		mMesh.mName = "MeshThatWillBeCut";
+		mMesh.initFrom( meshFilter.sharedMesh );
+		mMesh.mergePointsAtSamePositions();
+		mMesh.scale( 5 );
+
+		// faire un cut
+		{
+			// definir l'ensemble des edges du cut
+			var lCut = new List<Edge>();
+			lCut.Add( new Edge( 20, 19) );
+			lCut.Add( new Edge( 19, 18) );
+
+			lCut.Add( new Edge( 18, 24) );
+			lCut.Add( new Edge( 24, 25) );
+			//lCut.Add( new Link( 24, 23) );
+
+			// effectuer le cut, en doublonnant des sommets, et donc creant un trou dans le mesh ferme
+			Step8_createCut_geometryImage.createCut( lCut, mMesh );
+		}
+
+		// trouver la succession de sommet qui forme une boucle
+		{
+			mHole =  Step9_findHole_geometryImage.sFindHole( mMesh );
+
+			// afficher un petit message a ce sujet
+			string message = "Le hole contient les sommets : (";
+			for(int h = 0; h < mHole.Count; ++h)
+			{
+				message += (" "+mHole[h].ToString() );
+			}
+			message += ")";
+			Debug.Log(message);
+		}
+
+		// optionnellement : supprimer les vertex qui ne servent plus
+		{
+			List<int> removedVertices = Step8_createCut_geometryImage.sRemoveUnusedVertex( mMesh );
+
+			// les vertex supprimes ont crees des decallages dans nos indices de hole, il faut le prendre en compte
+			for(int i = 0; i < removedVertices.Count; ++i)
+			{
+				int removedVertex = removedVertices[i];
+				for(int h = 0; h < mHole.Count; ++h)
+				{
+					int previousHoleVertex = mHole[h];
+					if( removedVertex < previousHoleVertex )
+					{
+						mHole[h] = previousHoleVertex - 1;
+					}
+				}
+			}
+		}
+
+		// changer la couleur des sommets du hole
+		mMesh.visual_update();
+		mHole.ForEach( delegate( int pIndexVertex ){mMesh.visual_setPointColor( pIndexVertex, Color.blue); });
+
+
+		// noter la taille originale des liens
+		mEdges = mMesh.getEdges();
+		mOriginalLineLengths = new List<float>();
+		for(int l = 0; l<mEdges.Count; ++l)
+		{
+			var lLine3D = mEdges[l].getLine3D( mMesh.mPoints );
+			mOriginalLineLengths.Add( lLine3D.getLength() );
+		}
+
+		/*
+		// calculer pour chaque hole, la distance de celui-ci a chaque point du graph (VERSION SIMPLISTE)
+		{
+			List<float[]> distancesFromHoles = new List<float[]>();
+			foreach( int indexVertexHole in mHole)
+			{
+				Vector3 lHolePoint3D = mMesh.mPoints[indexVertexHole];
+
+				int nbVertices = mMesh.mPoints.Count;
+				float[] lDistancesFromHole = new float[nbVertices];
+				for(int v = 0; v < nbVertices; ++v)
+				{
+					lDistancesFromHole[v] = (mMesh.mPoints[v] - lHolePoint3D).magnitude;
+				}
+
+				distancesFromHoles.Add( lDistancesFromHole );
+			}
+			mVertexDistancesFromHoles = distancesFromHoles;
+		}
+		*/
+
+		// calculer pour chaque hole, la distance de celui-ci a chaque point du graph.
+		{
+			List<float[]> distancesFromHoles = new List<float[]>();
+			float[,] lAdjacencyMatrix = mMesh.getAdjacencyMatrix();
+			foreach( int indexVertexHole in mHole)
+			{
+				int nbVertices = mMesh.mPoints.Count;
+
+				float[] lDistancesFromHole = GraphDistance.dijkstra( nbVertices, lAdjacencyMatrix, indexVertexHole );
+				distancesFromHoles.Add( lDistancesFromHole );
+			}
+			mVertexDistancesFromHoles = distancesFromHoles;
+		}
+
+
+
+
+		// met le hole sur un cercle
+		deployHoleCircle();
+
+
+		// afficher notre modele 3D
+		mMesh.visual_update();
+		mMesh.visual_getPoint(0).parent.parent.gameObject.SetActive(false);
+	}
+
+	void Update()
+	{
+		//mMesh.visual_updateFromScene();
+		//mMesh.visual_update();
+
+
+		// affichage sous forme de lignes colorees
+		System.Random rand = new System.Random(55);
+		foreach( var lEdge in mEdges )
+		{
+			var lLine3D = lEdge.getLine3D( mMesh.mPoints );
+			float col_r = ((float)(rand.Next(255)))/255.0f;
+			float col_g = ((float)(rand.Next(255)))/255.0f;
+			float col_b = ((float)(rand.Next(255)))/255.0f;
+			Debug.DrawLine( lLine3D.p1, lLine3D.p2, new Color( col_r, col_g, col_b ));
+		}
+
+	}
+
+	void OnGUI()
+	{
+		if( GUILayout.Button("deployHoleCircle"))
+		{
+			deployHoleCircle();
+			//mMesh.visual_update();
+		}
+
+		if( GUILayout.Button("deployByBaryDistance"))
+		{
+			deployBaryDistance();
+			//mMesh.visual_update();
+		}
+
+		if( GUILayout.RepeatButton("progressive"))
+		{
+			for(int i = 0; i < 100;++i)
+			{
+				updateProgressive();
+			}
+		}
+	}
+
+	public void deployHoleCircle()
+	{
+		// creons un cercle a partir de notre hole
+		mHole3D = new Vector3[mHole.Count];
+		for(int h = 0; h < mHole.Count; ++h)
+		{
+			int indexVertex = mHole[h];
+
+			float angle_deg = ((float)h/(float)mHole.Count) * 360.0f;
+			float angle_rad = angle_deg * Mathf.Deg2Rad; 
+			Vector3 lNewPoint = new Vector3( Mathf.Cos( angle_rad ), Mathf.Sin( angle_rad), 0.0f)* mDeployedRadius;
+
+			mMesh.mPoints[ indexVertex ] = lNewPoint;
+			mHole3D[h] = lNewPoint;
+		}
+	}
+
+	/// calculer pour chaque hole, la distance de celui-ci a chaque point du graph.
+	/// puis, exprime la position de chaque point du mesh dans le repere barycentrique du polygone forme par le hole
+	public void deployBaryDistance()
+	{
+		// calcule les positions des points du graph avec des barycentres, dont les poids sont lies a nos distances
+		// cela permettra un premier jet interessant
+		for(int v = 0; v < mMesh.mPoints.Count; ++v)
+		{
+			if( mHole.Contains(v))
+			{
+				// lui reste lui meme, c'est deja un truc du bord
+				continue;
+			}
+
+			float sumQuantity = 0.0f;
+			Vector3 lVector3D = Vector3.zero;
+			for(int h = 0; h < mVertexDistancesFromHoles.Count; ++h)
+			{
+				float distance = mVertexDistancesFromHoles[h][v];
+				if( distance == float.MaxValue || distance == 0)
+				{
+					// vertex seul ou pb.
+					sumQuantity = 1.0f;
+					break;
+				}
+				float quantity = 1 / distance;
+				Vector3 lHole3D = mHole3D[h];
+				lVector3D = lVector3D + quantity * lHole3D;
+				sumQuantity += quantity;
+			}
+
+			mMesh.mPoints[v] = lVector3D / sumQuantity;
+		}
+	}
+
+
+	public void updateProgressive()
+	{
+		var lPoints = mMesh.mPoints;
+		for(int l = 0; l < mEdges.Count; ++l )
+		{
+			var lEdge = mEdges[l];
+			float originalSize0 = mOriginalLineLengths[l];
+
+			var lLine3D = lEdge.getLine3D( lPoints );
+			var p0 = lLine3D.p1;
+			var p1 = lLine3D.p2;
+
+			//float newSize0 = lLine3D.getLength();
+
+			// eviter les superpositions
+			if( (p0 - p1).magnitude <1.0f )
+			{
+				p0 = p1 + p1.normalized * 1.0f;
+				p1 = p1 - p1.normalized * 0.7f;
+				break;
+			}
+
+
+			/*
+			// ecarter par rapport au centre de la ligne
+			{
+				var center3D = lLine3D.getCenter();
+				var vecFromCenter0 = p0 - center3D;
+				var vecFromCenter1 = p1 - center3D;
+				float distFromCenter0 = vecFromCenter0.magnitude;
+				float distFromCenter1 = vecFromCenter1.magnitude;
+				float forceEcart = 1.0f;
+				p0 = p0 + (vecFromCenter0 * forceEcart / distFromCenter0) ;
+				p1 = p1 + (vecFromCenter1 * forceEcart / distFromCenter1) ;
+			}
+			*/
+
+			/*
+			// ramener plus pres des bords
+			{
+				float proximityWithBords0_01 = p0.magnitude / mDeployedRadius;
+				float proximityWithBords1_01 = p1.magnitude / mDeployedRadius;
+
+				p0 = p0 + p0.normalized * (proximityWithBords0_01);
+				p1 = p1 + p1.normalized * (proximityWithBords1_01);
+			}*/
+
+
+			/*
+			// essayer de retrouver le ratio original des longueurs
+			float delta = originalSize0 - newSize0;
+
+			Vector3 middle0 = (p0 + p1) *0.5f;
+
+			p0 = p0 + (p0 - middle0).normalized * delta * mProgressiveForce;
+			p1 = p1 + (p1 - middle0).normalized * delta * mProgressiveForce;
+			*/
+
+
+			mMesh.mPoints[lEdge.a] = p0;
+			mMesh.mPoints[lEdge.b] = p1;
+		}
+
+		// force le hole a sa position de base
+		for(int h = 0; h < mHole.Count; ++h)
+		{
+			mMesh.mPoints[mHole[h]] = mHole3D[h];
+		}
+	}
+
+}

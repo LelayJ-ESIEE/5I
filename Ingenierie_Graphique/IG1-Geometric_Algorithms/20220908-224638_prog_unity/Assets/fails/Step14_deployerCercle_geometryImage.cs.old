@@ -1,0 +1,508 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Step14_deployerCercle_geometryImage : MonoBehaviour {
+
+
+	Mesh3D mMesh;
+	List<int> mHole;
+	Vector3[] mHole3D;
+	public float mDeployedRadius = 1.0f;
+	public List<float> mOriginalLineLengths;
+	public List<Edge> mEdges;
+	public float mProgressiveForce = 1.0f;
+	List<float[]> mVertexDistancesFromHoles;
+
+	SM_Graph mSMGraph;
+
+	public float mSM_kCoeff = 0.01f;
+	public float mSM_kDamping = 0.01f;
+	public float mSM_kDampingNode = 0.01f;
+
+	// Use this for initialization
+	void Start()
+	{
+		// positionner camera
+		var lCamera = CameraHlp.setup3DCamera();
+		lCamera.transform.position = new Vector3(0,34,-68);
+		lCamera.backgroundColor = Color.cyan;
+
+
+		var lGo = Resources.Load("GermanShephardLowPoly") as GameObject;
+		if( null == lGo )
+		{
+			Debug.LogError("Impossible de trouver le modele 3D a charger");
+			enabled = false;
+			return;
+		}
+
+		MeshFilter meshFilter = lGo.GetComponentInChildren<MeshFilter>();
+		if( null == meshFilter || null == meshFilter.sharedMesh)
+		{
+			Debug.LogError("L'objet n'a pas de mesh ou de meshfilter");
+			enabled = false;
+			return;
+		}
+
+		mMesh = new Mesh3D();
+		mMesh.mName = "MeshThatWillBeCut";
+		mMesh.initFrom( meshFilter.sharedMesh );
+		mMesh.mergePointsAtSamePositions();
+		mMesh.scale( 5 );
+
+		// faire un cut
+		{
+			// definir l'ensemble des edges du cut
+			var lCut = new List<Edge>();
+			lCut.Add( new Edge( 20, 19) );
+			lCut.Add( new Edge( 19, 18) );
+
+			lCut.Add( new Edge( 18, 24) );
+			lCut.Add( new Edge( 24, 25) );
+			//lCut.Add( new Link( 24, 23) );
+
+			// effectuer le cut, en doublonnant des sommets, et donc creant un trou dans le mesh ferme
+			Step8_createCut_geometryImage.createCut( lCut, mMesh );
+		}
+
+		// trouver la succession de sommet qui forme une boucle
+		{
+			mHole =  Step9_findHole_geometryImage.sFindHole( mMesh );
+
+			// afficher un petit message a ce sujet
+			string message = "Le hole contient les sommets : (";
+			for(int h = 0; h < mHole.Count; ++h)
+			{
+				message += (" "+mHole[h].ToString() );
+			}
+			message += ")";
+			Debug.Log(message);
+		}
+
+		// optionnellement : supprimer les vertex qui ne servent plus
+		{
+			List<int> removedVertices = Step8_createCut_geometryImage.sRemoveUnusedVertex( mMesh );
+
+			// les vertex supprimes ont crees des decallages dans nos indices de hole, il faut le prendre en compte
+			for(int i = 0; i < removedVertices.Count; ++i)
+			{
+				int removedVertex = removedVertices[i];
+				for(int h = 0; h < mHole.Count; ++h)
+				{
+					int previousHoleVertex = mHole[h];
+					if( removedVertex < previousHoleVertex )
+					{
+						mHole[h] = previousHoleVertex - 1;
+					}
+				}
+			}
+		}
+
+
+		// noter la taille originale des liens
+		mEdges = mMesh.getEdges();
+		mOriginalLineLengths = new List<float>();
+		for(int l = 0; l<mEdges.Count; ++l)
+		{
+			var lLine3D = mEdges[l].getLine3D( mMesh.mPoints );
+			mOriginalLineLengths.Add( lLine3D.getLength() );
+		}
+
+		/*
+		// calculer pour chaque hole, la distance de celui-ci a chaque point du graph (VERSION SIMPLISTE)
+		{
+			List<float[]> distancesFromHoles = new List<float[]>();
+			foreach( int indexVertexHole in mHole)
+			{
+				Vector3 lHolePoint3D = mMesh.mPoints[indexVertexHole];
+
+				int nbVertices = mMesh.mPoints.Count;
+				float[] lDistancesFromHole = new float[nbVertices];
+				for(int v = 0; v < nbVertices; ++v)
+				{
+					lDistancesFromHole[v] = (mMesh.mPoints[v] - lHolePoint3D).magnitude;
+				}
+
+				distancesFromHoles.Add( lDistancesFromHole );
+			}
+			mVertexDistancesFromHoles = distancesFromHoles;
+		}
+		*/
+
+		// calculer pour chaque hole, la distance de celui-ci a chaque point du graph.
+		{
+			List<float[]> distancesFromHoles = new List<float[]>();
+			float[,] lAdjacencyMatrix = mMesh.getAdjacencyMatrix();
+			foreach( int indexVertexHole in mHole)
+			{
+				int nbVertices = mMesh.mPoints.Count;
+
+				float[] lDistancesFromHole = GraphDistance.dijkstra( nbVertices, lAdjacencyMatrix, indexVertexHole );
+				distancesFromHoles.Add( lDistancesFromHole );
+			}
+			mVertexDistancesFromHoles = distancesFromHoles;
+		}
+
+		// met le hole sur un cercle
+		deployHoleCircle();
+
+		deployBaryDistance();
+
+
+		// creer notre graph de spring
+		mSMGraph = new SM_Graph();
+		mSMGraph.initNodesFrom( mMesh.mPoints, null ); 
+		mSMGraph.initSpringsFrom( mEdges, null);
+
+
+		// affecter K selon une formule liee a la distance
+		var lArrayLineLengths = mOriginalLineLengths.ToArray();
+		float sumLineLengths = 0;
+		for(int l = 0; l < lArrayLineLengths.Length; ++l)
+		{
+			sumLineLengths += lArrayLineLengths[l];
+		}
+		for(int l = 0; l < lArrayLineLengths.Length; ++l)
+		{
+			//float kCoeff = 0.1f * (sumLineLengths - lArrayLineLengths[l]) / sumLineLengths ;
+			float kCoeff = lArrayLineLengths[l] / sumLineLengths ;
+			mSMGraph.mSprings[l].stiffness_coeff = kCoeff;
+		}
+
+
+	}
+
+	void Update()
+	{
+		// affichage sous forme de lignes colorees
+		System.Random rand = new System.Random(55);
+		foreach( var lEdge in mEdges )
+		{
+			var lLine3D = lEdge.getLine3D( mMesh.mPoints );
+			float col_r = ((float)(rand.Next(255)))/255.0f;
+			float col_g = ((float)(rand.Next(255)))/255.0f;
+			float col_b = ((float)(rand.Next(255)))/255.0f;
+			Debug.DrawLine( lLine3D.p1, lLine3D.p2, new Color( col_r, col_g, col_b ));
+		}
+
+	}
+
+	void OnGUI()
+	{
+		if( GUILayout.RepeatButton("vitesse 0"))
+		{
+			for(int n = 0; n < mSMGraph.mNodes.Count; ++n)
+			{
+				mSMGraph.mNodes[n].vitesse = Vector3.zero;
+			}
+		}
+		if( GUILayout.RepeatButton("vitesse random"))
+		{
+			for(int n = 0; n < mSMGraph.mNodes.Count; ++n)
+			{
+				mSMGraph.mNodes[n].vitesse = Random.onUnitSphere * 0.5f;
+			}
+		}
+
+		if( GUILayout.RepeatButton("spring update"))
+		{
+			//mSMGraph.setCoeffKForAll( mSM_kCoeff );
+			mSMGraph.setDampingForAllSprings( mSM_kDamping );
+			mSMGraph.setDampingForAllNodes( mSM_kDampingNode );
+
+
+			mSMGraph.update( 0.02f );
+			for(int h = 0; h < mHole.Count; ++h)
+			{
+				int indexVertexHole = mHole[h];
+				var lNodeHode = mSMGraph.mNodes[ indexVertexHole ];
+				lNodeHode.accel = Vector3.zero;
+				lNodeHode.vitesse = Vector3.zero;
+				lNodeHode.pos = mHole3D[h];
+			}
+
+			mSMGraph.applyTo( mMesh );
+
+		}
+
+		if( GUILayout.RepeatButton("mettre en 0"))
+		{
+			for(int n = 0; n < mSMGraph.mNodes.Count; ++n)
+			{
+				mSMGraph.mNodes[n].pos = Vector3.zero;
+			}
+
+			for(int h = 0; h < mHole.Count; ++h)
+			{
+				int indexVertexHole = mHole[h];
+				var lNodeHode = mSMGraph.mNodes[ indexVertexHole ];
+				lNodeHode.accel = Vector3.zero;
+				lNodeHode.vitesse = Vector3.zero;
+				lNodeHode.pos = mHole3D[h];
+			}
+
+			mSMGraph.applyTo( mMesh );
+		}
+
+		if( GUILayout.RepeatButton("mettre en grille"))
+		{
+			int nodeCount =mSMGraph.mNodes.Count;
+			int sqrtNodeCount = (int) Mathf.Sqrt( (float)nodeCount);
+			for(int n = 0; n < mSMGraph.mNodes.Count; ++n)
+			{
+				mSMGraph.mNodes[n].pos = new Vector3( n % sqrtNodeCount, n /sqrtNodeCount, 0) 
+						- new Vector3(sqrtNodeCount/2,sqrtNodeCount/2,0); // pour le centrer sur 0
+			}
+
+			for(int h = 0; h < mHole.Count; ++h)
+			{
+				int indexVertexHole = mHole[h];
+				var lNodeHode = mSMGraph.mNodes[ indexVertexHole ];
+				lNodeHode.accel = Vector3.zero;
+				lNodeHode.vitesse = Vector3.zero;
+				lNodeHode.pos = mHole3D[h];
+			}
+
+			mSMGraph.applyTo( mMesh );
+		}
+
+	}
+
+	public void deployHoleCircle()
+	{
+		// creons un cercle a partir de notre hole
+		mHole3D = new Vector3[mHole.Count];
+		for(int h = 0; h < mHole.Count; ++h)
+		{
+			int indexVertex = mHole[h];
+
+			float angle_deg = ((float)h/(float)mHole.Count) * 360.0f;
+			float angle_rad = angle_deg * Mathf.Deg2Rad; 
+			Vector3 lNewPoint = new Vector3( Mathf.Cos( angle_rad ), Mathf.Sin( angle_rad), 0.0f)* mDeployedRadius;
+
+			mMesh.mPoints[ indexVertex ] = lNewPoint;
+			mHole3D[h] = lNewPoint;
+		}
+	}
+
+	/// calculer pour chaque hole, la distance de celui-ci a chaque point du graph.
+	/// puis, exprime la position de chaque point du mesh dans le repere barycentrique du polygone forme par le hole
+	public void deployBaryDistance()
+	{
+		// calcule les positions des points du graph avec des barycentres, dont les poids sont lies a nos distances
+		// cela permettra un premier jet interessant
+		for(int v = 0; v < mMesh.mPoints.Count; ++v)
+		{
+			if( mHole.Contains(v))
+			{
+				// lui reste lui meme, c'est deja un truc du bord
+				continue;
+			}
+
+			float sumQuantity = 0.0f;
+			Vector3 lVector3D = Vector3.zero;
+			for(int h = 0; h < mVertexDistancesFromHoles.Count; ++h)
+			{
+				float distance = mVertexDistancesFromHoles[h][v];
+				if( distance == float.MaxValue || distance == 0)
+				{
+					// vertex seul ou pb.
+					sumQuantity = 1.0f;
+					break;
+				}
+				float quantity = 1 / distance;
+				Vector3 lHole3D = mHole3D[h];
+				lVector3D = lVector3D + quantity * lHole3D;
+				sumQuantity += quantity;
+			}
+
+			mMesh.mPoints[v] = lVector3D / sumQuantity;
+		}
+	}
+
+	// en partant des + proche (average distance) des holes
+	// et en allant vers les + loin 
+	void deployerParCentreDeGraviteDesVoisins()
+	{
+
+
+
+
+	}
+
+	/*
+	/// calculer pour chaque hole, la distance de celui-ci a chaque point du graph.
+	/// puis, exprime la position de chaque point du mesh dans le repere barycentrique du polygone forme par le hole
+	public void deployBaryDistance2()
+	{
+		// calcule les positions des points du graph avec des barycentres, dont les poids sont lies a nos distances
+		// cela permettra un premier jet interessant
+
+		// indice, distance, angle
+		Vector4[] sumPerVertex = new Vector4[mMesh.mPoints.Count];
+		for(int v = 0; v < sumPerVertex.Length; ++v)
+		{
+			for(var lDistanceFromHole in mVertexDistancesFromHoles)
+			{
+				sumPerVertex += lDistanceFromHole[v];
+			}
+		}
+
+
+
+		for(int v = 0; v < mMesh.mPoints.Count; ++v)
+		{
+			if( mHole.Contains(v))
+			{
+				// lui reste lui meme, c'est deja un truc du bord
+				continue;
+			}
+
+			float sumQuantity = 0.0f;
+			Vector3 lVector3D = Vector3.zero;
+			for(int h = 0; h < mVertexDistancesFromHoles.Count; ++h)
+			{
+				float distance = mVertexDistancesFromHoles[h][v];
+				if( distance == float.MaxValue || distance == 0)
+				{
+					// vertex seul ou pb.
+					sumQuantity = 1.0f;
+					break;
+				}
+				float quantity = 1 / distance;
+				Vector3 lHole3D = mHole3D[h];
+				lVector3D = lVector3D + quantity * lHole3D;
+				sumQuantity += quantity;
+			}
+
+			mMesh.mPoints[v] = lVector3D / sumQuantity;
+		}
+	}
+	*/
+
+
+	// le maximum
+	public float max(float[] p)
+	{
+		float res = float.MinValue;
+		for(int i = 0; i < p.Length; ++i)
+		{
+			res = Mathf.Max(res, p[i]);
+		}
+		return res;
+	}
+
+	public float max(List<float> p)
+	{
+		float res = float.MinValue;
+		for(int i = 0; i < p.Count; ++i)
+		{
+			res = Mathf.Max(res, p[i]);
+		}
+		return res;
+	}
+
+	// calcul grossier de la moyenne
+	public float average(float[] p)
+	{
+		return sum(p)/(float)p.Length; 
+	}
+	public float average(List<float> p)
+	{
+		return sum(p)/(float)p.Count; 
+	}
+
+
+	public float sum(float[] p)
+	{
+		float res = 0;
+		for(int i = 0; i < p.Length; ++i)
+		{
+			res += p[i];
+		}
+		return res; 
+	}
+
+
+	public float sum(List<float> p)
+	{
+		float res = 0;
+		for(int i = 0; i < p.Count; ++i)
+		{
+			res += p[i];
+		}
+		return res; 
+	}
+
+
+
+
+
+
+
+
+
+	/*
+	public void reduireAreaDesBigsTriangles(float pFactor01 = 0.8f)
+	{
+		float averageArea = 0.0f;
+
+		float biggestArea = -1.0f;
+		int foundTri = -1;
+
+		// [area/indexTri]
+		List<Vector2> areaTris = new List<Vector2>();
+
+		int nbFaces = mMesh.mFaces.Count;
+		for(int i = 0; i < mMesh.mFaces.Count; ++i)
+		{
+			float area = mMesh.calcAreaFace( i); 
+			if( area > biggestArea )
+			{
+				foundTri = i;
+				biggestArea = area;
+			}
+			areaTris.Add( new Vector2(area, (float)i));
+			averageArea += area;
+		}
+		averageArea /= (float)nbFaces;
+
+		/// tri par area decroissante
+		areaTris.Sort( (a,b)=>{ return b.x.CompareTo(a.x); } );
+
+		for(int i = 0; i < 15; ++i)
+		{
+			var lFace = mMesh.mFaces[i];
+			int numeroFace = (int)areaTris[i].y;
+			Vector3 center = mMesh.calcCenterFace( numeroFace );
+			var lA = mMesh.mPoints[lFace.a];
+			var lB = mMesh.mPoints[lFace.b];
+			var lC = mMesh.mPoints[lFace.c];
+
+			lA = center + (lA-center) *pFactor01;
+			lB = center + (lB-center) *pFactor01;
+			lC = center + (lC-center) *pFactor01;
+
+			mMesh.mPoints[lFace.a] = lA;
+			mMesh.mPoints[lFace.b] = lB;
+			mMesh.mPoints[lFace.c] = lC;
+
+
+			mSMGraph.mNodes[lFace.a].pos = lA;
+			mSMGraph.mNodes[lFace.b].pos = lB;
+			mSMGraph.mNodes[lFace.c].pos = lC;
+		}
+
+		for(int h = 0; h < mHole.Count; ++h)
+		{
+			int indexVertexHole = mHole[h];
+			var lNodeHode = mSMGraph.mNodes[ indexVertexHole ];
+			lNodeHode.pos = mHole3D[h];
+
+			mMesh.mPoints[indexVertexHole] = lNodeHode.pos;
+		}
+	}
+	*/
+}
+

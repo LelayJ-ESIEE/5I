@@ -1,0 +1,308 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Step10_triangulationSimple: MonoBehaviour
+{
+
+	/// notre graph
+	public Graph mGraph = null;
+
+	/// generation random avec toujours les meme points de depart
+	private System.Random internal_random;
+
+	public int mNbLink = 0;
+
+	// Use this for initialization
+	void Start () {
+
+		internal_random = new System.Random(6779);
+
+		// positionner et orienter la camera
+		CameraHlp.setup2DCamera();
+
+		// creer notre graph avec ses points : cote logique
+		mGraph = new Graph("PointCloud");
+
+		int variation = 3;
+
+		// je cree une sphere un peu difforme avec plein de points
+		for(int i = -180; i < 180; i+= 15)
+		{
+			for(int j = -90; j < 90; j+=15)
+			{
+				var lMoveX = internal_random.Next(-variation,variation);
+				var lMoveY = internal_random.Next(-variation,variation);
+				var lMoveZ = internal_random.Next(-variation,variation);
+
+
+				float i_rad = Mathf.Deg2Rad * (float)i;
+				float j_rad = Mathf.Deg2Rad * (float)j;
+
+
+				float cosI = Mathf.Cos(i_rad);
+				float cosJ = Mathf.Cos(j_rad);
+				float sinI = Mathf.Sin(i_rad);
+				float sinJ = Mathf.Sin(j_rad);
+
+				float radius = 16;
+				var lXYZ = new Vector3(  sinI * cosJ, sinI * sinJ,  cosI ) * radius;
+				lXYZ += new Vector3(lMoveX, lMoveY, lMoveZ);
+
+				mGraph.points.Add( lXYZ );
+			}
+		}
+
+		// afficher le graph dans la 3D, en creant des objets si besoin : cote visuel
+		mGraph.updateScene();
+
+		// supprimer tous les textes
+		for(int i = 0; i < mGraph.points.Count; ++i)
+		{
+			if( i % 100 == 0)
+			{
+				continue;
+			}
+			var lVisualPoint = mGraph.getVisualPoint(i);
+			var lTxtMesh = lVisualPoint.GetComponentInChildren<TextMesh>(); 
+			Object.Destroy( lTxtMesh.gameObject );
+		}
+	}
+	
+	// Update is called once per frame
+	void Update()
+	{
+		//----------------------------------------------------------------------
+		//----------------- mise a jour du graph (cote logique) ----------------
+		//----------------------------------------------------------------------
+
+		// si on a bouge des objets de la scene (via l'inspector), on prend cela en compte pour mettre a jour le graph
+		mGraph.updateFromScene();
+
+		// si on clique, on vient mettre 'le sommet le plus proche du clic' sous le curseur de la souris
+		if( Input.GetMouseButton(0))
+		{
+			// obtenir la position 3D de la souris (projection sur le plan Z = 0)
+			var lMousePosition3D = MouseHlp.getPositionOnZ();
+
+			// trouver le numero du point le plus proche
+			int indexPoint = mGraph.getClosestPointFrom( lMousePosition3D );
+
+			// le mettre a la meme position que la souris 3D
+			mGraph.points[indexPoint] = lMousePosition3D;
+		}
+
+
+		/// mise a jour de notre triangulation
+		bool fini = creerTriangulationSimple(mGraph);
+		if( fini )
+		{
+			// ajouter des liens entre chaque couple de 2 liens qui n'a pas de lien vers le ddebut
+		}
+
+		// effets sur la selection
+		#if UNITY_EDITOR
+		{
+			var lGo = UnityEditor.Selection.activeGameObject;
+			if( lGo  != null )
+			{
+				var lTrans = lGo.transform;
+				if( lTrans.parent != null && lTrans.parent.name == "points")
+				{
+					int numeroPoint = lTrans.GetSiblingIndex();
+					int nbLinks = countLinksWith( mGraph, numeroPoint );
+					Debug.Log("nombre de link sur selection : "+ nbLinks); 
+				}
+			}
+		}
+		#endif
+
+		//----------------------------------------------------------------------
+		//----------------- mise a jour de la scene (cote visuel)---------------
+		//----------------------------------------------------------------------
+		// bouger les objets 3D
+		mGraph.updateScene();
+	}
+
+	/// mets 3 liens sur chaque vertex
+	/// return true quand c'est fini
+	/// return false tant que c'est en cours
+	bool creerTriangulationSimple(Graph pG)
+	{
+		if( mNbLink > 3 || pG.points.Count < 4)
+		{
+			return true;
+		}
+
+		// partir d'un point.
+		while( true)
+		{
+			int[] pointWithLessLinks = getPointWithLessLinks(pG);
+			int indexPoint = pointWithLessLinks[0];
+			if( indexPoint == -1 )
+			{
+				return true;
+			}
+			if( pointWithLessLinks[1] > mNbLink)
+			{
+				++mNbLink;
+				return true;
+			}
+
+			int foundNewBrother = getClosestPointWith(pG, indexPoint, mNbLink );
+			if( foundNewBrother == -1 )
+			{
+				++mNbLink; 
+				if( mNbLink > 3 )
+				{
+					return true;
+				}
+				foundNewBrother = getClosestPointWith(pG, indexPoint, mNbLink );
+			}
+			if( foundNewBrother == -1 )
+			{
+				return true;
+			}
+			// creer le lien
+			mGraph.links.Add( new Link( indexPoint, foundNewBrother ));
+
+			// pas fini
+			return false;
+		}
+	}
+
+	/// renvoie [ numeroDuSommet, nombreLinks]
+	/// renvoie [ -1, max] si rien trouve
+	int[] getPointWithLessLinks(Graph pG)
+	{
+		int currentMaxLinks = int.MaxValue;
+		int best = -1;
+		for(int i = 0; i < pG.points.Count; ++i)
+		{
+			int nbLinks = countLinksWith( pG, i);
+			if( nbLinks  >= currentMaxLinks )
+			{
+				continue;
+			}
+
+			// preparer iteration suivante
+			currentMaxLinks = nbLinks;
+			best = i;
+
+			if( currentMaxLinks == 0)
+			{
+				// pas besoin de faire une boucle en plus, on a deja le meilleur
+				break;
+			}
+		}
+		return new int[]{best, currentMaxLinks};
+	}
+
+	/// return -1 si rien trouve
+	/// sinon l'index du point etant le plus proche de pA et possedant moins de nbMaxLinks et non relie a A
+	int getClosestPointWith(Graph pG, int i_A, int nbMaxLinks)
+	{
+		var points = pG.points;
+		float bestDistance = float.MaxValue;
+		int bestPoint = -1;
+		var lPointA = points[i_A];
+		for(int i_B = 0; i_B < points.Count; ++i_B)
+		{
+			if( i_B == i_A )
+			{
+				continue;
+			}
+
+			var lPointB = points[i_B];
+			float newLength = (lPointA - lPointB).length();
+			if( newLength >= bestDistance )
+			{
+				continue;
+			}
+
+			// est-il deja relie a A
+			var lLink_A_New = pG.links.Find( (x)=>{
+				bool cas1 = (x.a == i_B) && (x.b == i_A);
+				bool cas2 = (x.b == i_B) && (x.a == i_A);
+				return cas1 || cas2;
+			});
+
+			if( lLink_A_New != null )
+			{
+				//deja relie
+				continue;
+			}
+
+			if( countLinksWith( pG, i_B) > nbMaxLinks)
+			{
+				continue;
+			}
+
+			bestDistance = newLength;
+			bestPoint = i_B;
+		}
+		return bestPoint;
+	}
+
+	/// compte le nombre de liens etant lies a pPoint
+	int countLinksWith( Graph pG, int pPoint)
+	{
+		int result = 0;
+		var lLinks = pG.links;
+		for(int i = 0; i < lLinks.Count; ++i)
+		{
+			var lLink = lLinks[i];
+			if( lLink.a == pPoint)
+			{
+				++result;
+			}
+			if( lLink.b == pPoint)
+			{
+				++result;
+			}
+		}
+		return result;
+	}
+
+
+	/*
+	/// s'occupe juste du point A
+	void creerTriangulationMoche(Graph pG, int pA)
+	{
+		var points = pG.points;
+
+		// calcul du centre de notre objet
+		var center = new Vector3(0,0,0);
+		if( points.Count > 0)
+		{
+			center = points[0];
+			for(int i = 1; i < points.Count; ++i)
+			{
+				center += points[i];
+			}
+			center /= (float)points.Count;
+		}
+
+
+		var A = points[pA];
+		for(int b = 0; b < points.Count; ++b)
+		{
+			var B = points[b];
+			for(int c = 0; c < points.Count; ++c)
+			{
+				var C = points[c];
+
+				// trouver un point en dehors de notre triangle
+				var lABC = new Plane(A,B,C);
+				float signed_distToCenter = lABC.GetDistanceToPoint( center );
+				var lPointOutside = A + lABC.normal * signed_distToCenter;
+
+				// essayer de prouver que ce n'est pas un triangle de delaunay
+				// on teste donc la circonference
+
+
+			}
+		}
+	}*/
+}
+

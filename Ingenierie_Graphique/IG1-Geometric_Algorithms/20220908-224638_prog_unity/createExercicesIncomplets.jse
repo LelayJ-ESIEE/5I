@@ -1,0 +1,158 @@
+// ceci est un fichier executable sous windows directement. il suffit de double cliquer dessus.
+// officiellement ce langage est "jscript" mais en fait c'est juste du javascript.
+
+// Ce fichier cree des doublons des fichiers ".cs" dont il enleve des parties.
+// Les parties de texte enlevees sont celles situees entre //TOREMOVEFOREXERCISES_BEGIN et TOREMOVEFOREXERCISES_END
+
+// pour l'usage du filesystem en jscript
+// http://msdn.microsoft.com/en-us/library/bkx696eh%28v=vs.84%29.aspx
+var lFileSystem = new ActiveXObject("Scripting.FileSystemObject");
+
+// ici, le necessaire de debug est :
+// WScript.Echo( "hello" );
+
+//
+// autres fonctions utiles pour string: indexOf(subString,startIndex), renvoie -1 si pb.
+//     replace(rgExp : RegExp, replaceText : String) : String
+//
+
+function str_endsWith(strBig, str2)
+{
+	if( strBig.length < str2.length)
+	{
+		return false;
+	}
+	for( var i = 0; i < str2.length; ++i)
+	{
+		if( strBig.charAt( strBig.length -1 -i ) == str2.charAt( str2.length -1 -i))
+		{
+			// semble ok
+		}else{
+			return false;
+		}
+	}
+	return true;
+}
+
+
+function str_startsWith(strBig, str2)
+{
+	if( strBig.length < str2.length)
+	{
+		return false;
+	}
+	for( var i = 0; i < str2.length; ++i)
+	{
+		if( strBig.charAt( i ) == str2.charAt( i ))
+		{
+			// semble ok
+		}else{
+			return false;
+		}
+	}
+	return true;
+}
+
+
+// \s\S permet de trouver ts les caracteres
+// les slash aux extremites c'est pour dire "c'est une regex".
+// le ? est pour 'non greedy'
+var regex1 = /\/\/TOREMOVEFOREXERCISES_BEGIN[\s\S]*?TOREMOVEFOREXERCISES_END/;
+
+function doItOnDirectory(pPath_dir_as)
+{
+	// parcourir les fichiers dans src, et generer un .bat pour chaque fichier .cpp (sauf le main)
+	var lRepSrc = lFileSystem.GetFolder( pPath_dir_as );
+	var lFilesSrcEnum = new Enumerator(lRepSrc.Files);
+	for(;!lFilesSrcEnum.atEnd();lFilesSrcEnum.moveNext())
+	{
+		// NOM ABSOLU + informations de fichier
+		var lFileSrcAbs = lFilesSrcEnum.item();
+
+		// conversion en string
+		var lFileSrcAbs_s = "" + lFileSrcAbs;
+		
+		if( !str_endsWith( lFileSrcAbs_s, ".cs" ) )
+		{
+			// pas souhaite
+			continue;
+		}
+
+		// on veut le NOM FICHIER uniquement
+		var lElementToSearchAndRemove = pPath_dir_as+"\\Step";
+		
+		var lIndexWithStep = lFileSrcAbs_s.indexOf(lElementToSearchAndRemove);
+		if( lIndexWithStep == -1 )
+		{
+			continue;
+		}
+		var alreadyIncomplete = lFileSrcAbs_s.indexOf("_incomplet");
+		if( alreadyIncomplete != -1 )
+		{
+			continue;
+		}
+		
+		var lFileNameOnly = "Step"+ lFileSrcAbs_s.substr( lIndexWithStep + lElementToSearchAndRemove.length );	
+		var lFileNameOnly_noExt = lFileNameOnly.substr( 0, lFileNameOnly.length - 3 );
+		var lFileNameOnlyGenerated = lFileNameOnly_noExt + "_incomplet.cs";
+
+		// suppression ancien fichier s'il existe
+		var lNewFileNamePath = pPath_dir_as +"\\"+ lFileNameOnlyGenerated;
+		if( lFileSystem.FileExists(lNewFileNamePath))
+		{
+			lFileSystem.DeleteFile( lNewFileNamePath );
+		}
+		
+		// lecture du fichier
+		var read_mode = 1; // io 
+		//var unicode_mode = -1;
+		var lSrcFile = lFileSystem.OpenTextFile(lFileSrcAbs_s, read_mode, false);
+		var lContentRead = "";
+		if(!lSrcFile.AtEndOfStream)
+		{
+			lContentRead = (lSrcFile.ReadAll());
+		}
+		lSrcFile.Close();
+		
+		// creation de la nouvelle chaine
+		var lResultToWrite = lContentRead.replace( regex1 , "// TODO COMPLETEZ ICI\r\n");
+		if( lResultToWrite == lContentRead)
+		{
+			// pas de changement
+			continue;
+		}
+		
+		var stillNeedsToRemoveStuff = true;
+		while( stillNeedsToRemoveStuff )
+		{
+			var lNewResultToWrite = lResultToWrite.replace( regex1 , "// TODO COMPLETEZ ICI\r\n");
+			if( lNewResultToWrite == lResultToWrite)
+			{
+				stillNeedsToRemoveStuff = false;
+			}
+			lResultToWrite = lNewResultToWrite;
+		}
+		
+		// on remplace le nom de la classe (pas le temps de trouver la syntaxe exacte...)
+		lResultToWrite = lResultToWrite.replace(lFileNameOnly_noExt,"azertyuiop33qsdfg");
+		lResultToWrite = lResultToWrite.replace(lFileNameOnly_noExt,"azertyuiop33qsdfg");
+		lResultToWrite = lResultToWrite.replace(lFileNameOnly_noExt,"azertyuiop33qsdfg");
+		lResultToWrite = lResultToWrite.replace(lFileNameOnly_noExt,"azertyuiop33qsdfg");
+		
+		lResultToWrite = lResultToWrite.replace("azertyuiop33qsdfg", lFileNameOnly_noExt+"_incomplet");
+		lResultToWrite = lResultToWrite.replace("azertyuiop33qsdfg", lFileNameOnly_noExt+"_incomplet");
+		lResultToWrite = lResultToWrite.replace("azertyuiop33qsdfg", lFileNameOnly_noExt+"_incomplet");
+		lResultToWrite = lResultToWrite.replace("azertyuiop33qsdfg", lFileNameOnly_noExt+"_incomplet");
+
+		// ecrire sur le disque
+		var lTextFile = lFileSystem.CreateTextFile(lNewFileNamePath, true);
+		lTextFile.WriteLine(lResultToWrite);
+		lTextFile.Close();
+	}
+}
+	
+doItOnDirectory("Assets\\100_forces");
+doItOnDirectory("Assets\\200_meshes");
+doItOnDirectory("Assets\\300_anims");
+
+
