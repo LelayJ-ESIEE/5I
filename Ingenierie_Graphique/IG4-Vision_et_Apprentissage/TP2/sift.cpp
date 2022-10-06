@@ -33,8 +33,11 @@ int main( int argc, char** argv )
       Ptr<Feature2D> ptr = cv::SIFT::create();
       ptr->detectAndCompute(src[i], Mat(), kp[i], descriptor[i]);
 
+      // Draw Keypoints
+      cv::drawKeypoints	( src[i], kp[i], dst[i], Scalar(0,170,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
       namedWindow(noms[i]);
-      imshow(noms[i], src[i]);
+      imshow(noms[i], dst[i]);
     }
   
     waitKey();
