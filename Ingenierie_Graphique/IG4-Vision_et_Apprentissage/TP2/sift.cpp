@@ -13,11 +13,19 @@ Mat src[2];
 
 int main( int argc, char** argv )
 {
+  Mat tmp;
   char *noms[] = { "source", "cible" };
   
   for (int i= 0; i <= 1; i++)
     {
       src[i]= imread(argv[1+i]);
+
+      if (src[i].channels() > 1)
+      {
+        cvtColor( src[i], tmp, COLOR_BGR2GRAY );
+        src[i]= tmp;
+      }
+
       namedWindow(noms[i]);
       imshow(noms[i], src[i]);
     }
