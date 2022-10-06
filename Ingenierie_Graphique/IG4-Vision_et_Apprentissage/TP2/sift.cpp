@@ -9,7 +9,9 @@ using namespace cv;
 using namespace std;
 
 Mat src[2];
-
+std::vector<KeyPoint> kp[2];
+Mat descriptor[2];
+Mat dst[2];
 
 int main( int argc, char** argv )
 {
@@ -20,11 +22,16 @@ int main( int argc, char** argv )
     {
       src[i]= imread(argv[1+i]);
 
+      // Grey scale conversion
       if (src[i].channels() > 1)
       {
         cvtColor( src[i], tmp, COLOR_BGR2GRAY );
         src[i]= tmp;
       }
+      
+      // SIFT detection
+      Ptr<Feature2D> ptr = cv::SIFT::create();
+      ptr->detectAndCompute(src[i], Mat(), kp[i], descriptor[i]);
 
       namedWindow(noms[i]);
       imshow(noms[i], src[i]);
