@@ -15,9 +15,9 @@ def vocabulaire(N,chemins,fichier,methode):
 ### 2.1.2 Recherche de N
 def coude():
     """
-    Etant donné une liste de chemins d’accès :
-    — Appelle la fonction vocabulaire() précédente sur vos quatre répertoires d’apprentissage, en faisant varier N
-    — Représente graphiquement l’inertie moyenne et la plus grande erreur qui résulte de la clusterisation en fonction de N.
+    Etant donne une liste de chemins d’acces :
+    — Appelle la fonction vocabulaire() precedente sur vos quatre repertoires d’apprentissage, en faisant varier N
+    — Represente graphiquement l’inertie moyenne et la plus grande erreur qui resulte de la clusterisation en fonction de N.
     — Sauvegarde ces graphiques sur disque
     """
     pass
@@ -32,9 +32,9 @@ def coude():
 ## 3.1 D’une seule image
 def vectoriser(im, voca):
     """
-    étant donné un fichier image fourni en paramètre et la matrice vocabulaire :
+    Etant donne un fichier image fourni en parametre et la matrice vocabulaire :
     — Extrait des SIFT de cette image
-    — Vectorise le résultat, en produisant un vecteur dont chaque composante i représente le nombre de fois où le i-ème mot du vocabulaire s’est trouvé plus proche d’un descripteur extrait de l’image que n’importe quel autre mot, comme expliqué en cours
+    — Vectorise le resultat, en produisant un vecteur dont chaque composante i represente le nombre de fois où le i-eme mot du vocabulaire s’est trouve plus proche d’un descripteur extrait de l’image que n’importe quel autre mot, comme explique en cours
     — Renvoie le vecteur obtenu
     """
     pass
@@ -42,17 +42,17 @@ def vectoriser(im, voca):
 ## 3.2 De toute la base d’apprentissage
 def test_vecto():
     """
-    appelle la fonction vectoriser() sur l’ensemble des images de vos répertoires d’apprentissage. Vous obtiendrez en résultat une matrice de vecteurs, et une liste (ou un vecteur, au choix) de noms de fichiers, que vous sauvegarderez sur disque sous le nom base.pickle. Aide : module pickle de Python
+    Appelle la fonction vectoriser() sur l’ensemble des images de vos repertoires d’apprentissage. Vous obtiendrez en resultat une matrice de vecteurs, et une liste (ou un vecteur, au choix) de noms de fichiers, que vous sauvegarderez sur disque sous le nom base.pickle. Aide : module pickle de Python
     """
     pass
 
 # 4 Apprentissage et tests
 
 ## 4.1 Avec 2 classes
-# Lignes utilisées : ???
+# Lignes utilisees : ???
 
 ### 4.1.1 Effet de la Kernel-LDA
 # ???
 
-### 4.1.2 Séparation par SVM
+### 4.1.2 Separation par SVM
 # ???
