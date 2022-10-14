@@ -17,14 +17,13 @@ Mat dst[2];
 std::vector<DMatch> matches;
 Mat img_matches;
 
-double moyenne( int argc, char** argv )
+double moyenne(char** filepaths )
 {
   Mat tmp;
-  char *noms[] = { "source", "cible" };
   
   for (int i= 0; i <= 1; i++)
   {
-    src[i]= imread(argv[1+i]);
+    src[i]= imread(filepaths[i]);
 
     // Grey scale conversion
     if (src[i].channels() > 1)
@@ -36,13 +35,6 @@ double moyenne( int argc, char** argv )
     // SIFT detection
     Ptr<Feature2D> ptr = cv::SIFT::create();
     ptr->detectAndCompute(src[i], Mat(), kpts[i], descriptor[i]);
-
-    // Draw Keypoints
-    // drawKeypoints( src[i], kpts[i], dst[i], Scalar(0,192,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-
-    // namedWindow(noms[i]);
-    // imshow(noms[i], src[i]);
-    // imshow(noms[i], dst[i]);
   }
 
   // Compute SIFTs correspondances
@@ -52,28 +44,31 @@ double moyenne( int argc, char** argv )
   // Sort pairs and print them
   sort(matches.begin(), matches.end());
   float avg = 0.0f;
+
+  // Compute average distance
   for(int i = 0; i < matches.size() && i<N; i++)
   {
-    // cout << "KP " << matches[i].queryIdx << " <-> " << matches[i].trainIdx << ", distance=" << matches[i].distance << "\n";
     if(i<N)
       avg += matches[i].distance;
   }
   avg /= N;
-
-  // Show the two images with the N best correspondances
-  /* 
-  vector<char> mask(matches.size(), 0);
-  for(int i; i < N; i++)
-    mask[i] = 1;
-  namedWindow("figure");
-  drawMatches(src[0], kpts[0], src[1], kpts[1], matches, img_matches, Scalar(0,192,0), Scalar(0,192,0), mask, DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-  imshow("figure", img_matches);
-  */
-
-  // Print statistics
-  // cout << "STATISTIQUES: moyenne=" << avg << ", min=" << matches[0].distance << ", max=" << matches[N-1].distance << "\n";
-
-  // waitKey();
   return avg;
 }
 
+int main( int argc, char** argv )
+{
+  Mat dist = Mat(argc-1, argc-1, CV_64F);
+  for(int i = 0; i < argc-1; i++)
+  {
+    dist.at<double>(i,i) = 0;
+    for(int j = i+1; j < argc-1; j++)
+    {
+      char* imgs[] = {argv[1+i], argv[1+j]};
+      dist.at<double>(j,i) = dist.at<double>(i,j) = moyenne(imgs);
+    }
+  }
+  cout << "Matrice des distances:" << endl << "--------------------------" << endl << dist << endl;
+}
+
+// On remarque de mauvaises classifications entre les classes at et kt : certaines classifications rapprochent plus des chats de l'Arc de Tromphe que d'autres chats.
+// La distance moyenne ne semble donc pas être un critère de classification utilisable efficacement.
