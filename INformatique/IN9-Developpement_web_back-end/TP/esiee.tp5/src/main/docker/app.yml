@@ -1,0 +1,15 @@
+version: '2'
+services:
+    tp5-app:
+        image: tp5
+        external_links:
+            - tp5-mysql:mysql
+        environment:
+            - SPRING_PROFILES_ACTIVE=prod
+            - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tp5?useUnicode=true&characterEncoding=utf8&useSSL=false
+        ports:
+            - 8080:8080
+    tp5-mysql:
+        extends:
+            file: mysql.yml
+            service: tp5-mysql
