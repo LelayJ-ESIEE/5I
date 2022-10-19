@@ -1,8 +1,10 @@
+from unittest import main
+import cv2
 ## 1.3 Base d’images
 # ???
 
 ### 2.1.1 Fonction vocabulaire
-def vocabulaire(N,chemins,fichier,methode):
+def vocabulaire(N: int, chemins: list(""), fichier: str, methode: str):
     """
     Etant donne un entier N, une liste des chemins d’acces a des repertoires, et eventuellement un parametre pour la methode a utiliser :
     — Charge chaque image de ces repertoires, et en extrait des SIFT. Aide : glob.glob, s=cv2.xfeatures2d.SIFT_create(), s.detectAndCompute()
@@ -10,7 +12,9 @@ def vocabulaire(N,chemins,fichier,methode):
     — Sauvegarde sur disque les centres de clusters SIFT trouves sous forme d’une matrice, que nous appellerons matrice vocabulaire, si fichier est precise. Aide : savetxt().
     — Retourne l’inertie moyenne, et la plus grande erreur au sens de la norme L2 induites par cette clusterisation.
     """
-    pass
+    for chemin in chemins:
+        img = cv2.imread(chemin)
+        s=cv2.SIFT_create()
 
 ### 2.1.2 Recherche de N
 def coude():
@@ -25,7 +29,7 @@ def coude():
 # 1. ???
 # 2. ???
 # 3. ???
-# 4. ???
+# 4. Sur/Sous-apprentissage ?
 
 # 3 Vectorisation
 
@@ -56,3 +60,6 @@ def test_vecto():
 
 ### 4.1.2 Separation par SVM
 # ???
+
+if __name__ == "__main__":
+    pass
