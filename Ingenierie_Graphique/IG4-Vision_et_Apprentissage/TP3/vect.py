@@ -7,7 +7,7 @@ import numpy as np
 # ???
 
 ### 2.1.1 Fonction vocabulaire
-def vocabulaire(N: int, chemins: list(""), fichier: str = "", methode: str = "agglomerative_clustering"):
+def vocabulaire(N: int, chemins: list(""), fichier: str = "", methode: str = "kmeans"):
     """
     Etant donne un entier N, une liste des chemins d’acces a des repertoires, et eventuellement un parametre pour la methode a utiliser :
     — Charge chaque image de ces repertoires, et en extrait des SIFT. Aide : glob.glob, s=cv2.xfeatures2d.SIFT_create(), s.detectAndCompute()
@@ -15,9 +15,10 @@ def vocabulaire(N: int, chemins: list(""), fichier: str = "", methode: str = "ag
     — Sauvegarde sur disque les centres de clusters SIFT trouves sous forme d’une matrice, que nous appellerons matrice vocabulaire, si fichier est precise. Aide : savetxt().
     — Retourne a minima l’inertie moyenne, et la plus grande erreur au sens de la norme L2 induites par cette clusterisation.
     """
+    print("path")
     imgs_path = []
     for chemin in chemins:
-        imgs_path += [img for img in glob(chemin + "/*")]
+        imgs_path += [img for img in glob(chemin + "/*.jpg")]
     
     inertie = 0.0
     
@@ -28,46 +29,41 @@ def vocabulaire(N: int, chemins: list(""), fichier: str = "", methode: str = "ag
 
         centers = None
 
-        if methode == "hierarchical_clustering":
-            ag = sklearn.cluster.AgglomerativeClustering(n_clusters=N)
-            ag.fit(descriptors)
-            centers = ag.distances_
-            # inertie += # TODO
-            print(centers)
-        elif methode == "mbkmeans":
-            mbkmeans = sklearn.cluster.MiniBatchKMeans(n_clusters=N)
-            mbkmeans.fit(descriptors)
-            centers = mbkmeans.cluster_centers_
-            inertie += mbkmeans.inertia_
-            print(centers)
-        elif methode == "kmeans":
+        if methode == "kmeans":
+            print("kmeans")
             kmeans = sklearn.cluster.KMeans(n_clusters=N)
             kmeans.fit(descriptors)
             centers = kmeans.cluster_centers_
             inertie += kmeans.inertia_
-            print(centers)
+            # Error = max distance avec centres ^2
         else:
             raise NotImplementedError
         
+        print("save")
         if fichier != "":
-            np.savetxt(fichier, centers)
+            np.savetxt(fichier + "_" + path.split("/")[-1].rstrip(".jpg"), centers)
 
     return inertie/len(imgs_path)
 
 ### 2.1.2 Recherche de N
-def coude():
+def coude(chemins: list("")):
     """
     Etant donne une liste de chemins d’acces :
     — Appelle la fonction vocabulaire() precedente sur vos quatre repertoires d’apprentissage, en faisant varier N
     — Represente graphiquement l’inertie moyenne et la plus grande erreur qui resulte de la clusterisation en fonction de N.
     — Sauvegarde ces graphiques sur disque
     """
-    pass
 
-# 1. ???
-# 2. ???
-# 3. ???
-# 4. Sur/Sous-apprentissage ?
+    for chemin in chemins:
+        for i in range(1,202, 25):
+            print("go")
+            vocabulaire(i, [chemin], "./vocab_matrix/"+chemin+"/test_"+str(i))
+            print("went")
+
+# 1. Nous utilisons K-means pour des raisons de facilité d'implémentation
+# 2. N = ??? semble convenable TODO
+# 3. TODO
+# 4. Sur/Sous-apprentissage
 
 # 3 Vectorisation
 
@@ -100,4 +96,4 @@ def test_vecto():
 # ???
 
 if __name__ == "__main__":
-    print(vocabulaire(1, ["airplanes/test", "ant/test", "dolphin/test", "wild_cat/test"], "./test"))
+    coude(["airplanes/test", "ant/test", "dolphin/test", "wild_cat/test"])
