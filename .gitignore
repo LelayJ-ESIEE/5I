@@ -1,6 +1,6 @@
 *.pdf
 
 # Unités terminées
-INformatique/IN9-Developpement_web_back-end/*
-Ingenierie_Graphique/*
-Sciences_de_l_Ingenieur/SI2-Probabilites/*
+INformatique/IN9-Developpement_web_back-end/
+Ingenierie_Graphique/
+Sciences_de_l_Ingenieur/SI2-Probabilites/
