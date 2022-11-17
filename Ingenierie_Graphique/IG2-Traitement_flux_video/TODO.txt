@@ -1,0 +1,28 @@
+1) Ecrire une application qui charge l'image en niveaux de gris et l'affiche
+
+2) Ecrire une application qui :
+	a) charge l'image en couleur
+	b) convertit l'image en niveau de gris
+	c) affiche chacune de ces deux images
+	d) enregistre sur le disque dur l'image en niveaux de gris au format PNG
+
+3) Interaction clavier. Ecrire une application qui :
+	a) charge une image passée en argument du programme
+	b) sur appui de la touche "L" fait pivoter l'image sur la gauche
+	c) sur appui de la touche "R" fait pivoter l'image sur la droite
+	d) sur appui de la touche "S" enregistre l'image obtenue
+
+4) Sliders Brightness-Contrast
+
+5) Un logiciel qui :
+	a) Charge l'image
+	b) La convertit en luminance/saturation/valeur : cvtConvert() -> HSV
+	c) Crée un masque : inRange() + traitement
+	d) Utilise ce masque pour extraire les smarties jaunes : copyTo()
+	voir SS du 11/10, ~14:55
+
+5) Compatage des smarties. Un logiciel qui :
+	a) Charge l'image
+	b) La convertit en niveaux de gris
+	c) Seuille l'image pour ne convertir que les smarties (fond à 255, smarties à 0)
+	d) En extrait les contours (génère les contours et en compte le nombre)
