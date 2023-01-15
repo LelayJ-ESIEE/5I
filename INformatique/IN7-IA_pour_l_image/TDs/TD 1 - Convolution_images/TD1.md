@@ -3,7 +3,7 @@
 Date limite de rendu : 15/01/2023, 23:59
 
 ## 2. Opérations de base
-
+Programme *colors* disponible dans le dossier *src*
 ### 1. Création et manipulation d’images avec Python et OpenCV
 ```Python
 import cv2
@@ -67,6 +67,7 @@ for c in range(-1,-4,-1):
 ```
 Intensité de couleur réduite à 224 par soucis de lisibilité et de confort de visualisation
 ### 4. Commentaires
+#### Code commenté
 ```Python
 """
 First script of the unit, showing 3 512*512 images for the 3 primary colors with a black frame, a
@@ -116,3 +117,104 @@ for c in range(-1,-4,-1): # Parcours inverse pour respecter l'ordre RGB
     cv2.destroyWindow(COLORS[c])
 
 ```
+#### Exemple d'exécution
+![[Red.png]]
+![[Green.png]]
+![[Blue.png]]
+## 3. Traitement d'images
+### Mise en œuvre du TD
+#### 1. Téléchargement de l'archive
+#### 2. Décompression de l'archive
+#### 3. Test et modification
+#### 4. Commentaires
+##### RK_Read_Image.py
+###### Code commenté
+```Python
+"""
+Edited by Rostom Kachouri
+M1-IRV_ST2IAI _ Mars 2021
+"""
+
+#Read Image
+
+import cv2
+# Take image path in input
+img_path = input("Input image path: ")
+# LOAD AN IMAGE USING 'IMREAD'
+img = cv2.imread(img_path)
+# DISPLAY
+cv2.imshow("Lena Soderberg",img)
+cv2.waitKey(0)
+
+cv2. destroyWindow ('Lena Soderberg')
+
+```
+###### Exemple d'exécution
+![[TD_Image.png]]
+##### RK_Read_Video.py
+###### Code commenté
+```Python
+"""
+Edited by Rostom Kachouri
+M1-IRV_ST2IAI _ Mars 2021
+"""
+
+#Read Video
+
+import cv2
+#frameWidth = 640
+#frameHeight = 480
+# Take capture path in input
+cap_path = input("Input capture path: ")
+cap = cv2.VideoCapture(cap_path)
+while True:
+    success, img = cap.read()
+    #img = cv2.resize(img, (frameWidth, frameHeight))
+    cv2.imshow("Video", img)
+    #cv2.waitKey(1)
+    if cv2.waitKey(1) == ord('q'):
+        break
+
+cv2. destroyWindow ('Video')
+
+```
+###### Exemple d'exécution
+![[TD_Video.png]]
+##### RK_Read_Webcam.py
+###### Code commenté
+```Python
+"""
+Edited by Rostom Kachouri
+M1-IRV_ST2IAI _ Mars 2021
+"""
+
+#Read Webcam
+
+import cv2
+
+# 0 caméra back (principale), 1 caméra front et 2 webcame externe si elle existe
+# Take capture path in input
+cam_id = int(input("Input camera id (0 back cam (principal), 1 front cam and 2 external webcam): "))
+cameraCapture = cv2.VideoCapture (cam_id)
+cv2 .namedWindow ('MyWindow' )
+print ('Showing camera feed. Press any key to stop.')
+success, frame = cameraCapture.read()
+while success and cv2.waitKey(1) == -1:
+    cv2.imshow('MyWindow', frame)
+    success, frame = cameraCapture.read()
+
+cv2. destroyWindow ('MyWindow')
+
+```
+###### Exemple d'exécution
+![[TD_Webcam.png]]
+### Conversion couleur
+#### 1.
+#### 2.
+#### 3.
+#### 4.
+### Convolution d'images
+#### 5.
+#### 6.
+#### 7.
+#### 8.
