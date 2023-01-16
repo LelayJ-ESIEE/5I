@@ -1,4 +1,8 @@
 """
+Edited by Jules LELAY
+5I-IN7
+January 2023
+
 First script of the unit, showing 3 512*512 images for the 3 primary colors with a black frame, a
 centered white circle and the color name underlined.
 """

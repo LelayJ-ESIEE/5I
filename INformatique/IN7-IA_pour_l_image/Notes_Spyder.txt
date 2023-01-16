@@ -1,0 +1,6 @@
+Notes Spyder
+
+Hotkeys :
+	F5 - Execute file
+	F9 - Execute line
+	Ctrl+I - Help

@@ -209,12 +209,289 @@ cv2. destroyWindow ('MyWindow')
 ###### Exemple d'exécution
 ![[TD_Webcam.png]]
 ### Conversion couleur
-#### 1.
-#### 2.
-#### 3.
-#### 4.
+#### 1. Conversion manuelle
+#### 2. Commentaires
+##### Code commenté
+```Python
+"""
+Edited by Jules LELAY
+5I-IN7
+January 2023
+
+Second script of the unit, converting an RGB image to a grayscale one manually
+"""
+import cv2
+import numpy as np
+
+def convertToGrey(img):
+    dest = np.zeros((len(img),len(img[0]),1),np.uint8) # Création d'une image noire
+    # Copy grey converted pixels
+    for i in range(len(dest)):
+        for j in range(len(dest[0])):
+            dest[i][j] = img[i][j][0] * 0.2989 + img[i][j][1] * 0.5870 + img[i][j][2] * 0.1140
+    return dest
+
+def affCompareImg(src, dest):
+    cv2.imshow("src",src)
+    cv2.imshow("dest",dest)
+    cv2.waitKey(0)
+    cv2.destroyWindow("src")
+    cv2.destroyWindow("dest")
+
+def affCompareCap(src):
+    while True:
+        success, img = src.read()
+        cv2.imshow("src", img)
+        cv2.imshow("dest",convertToGrey(img))
+        if cv2.waitKey(1) == ord('q'):
+            break
+    cv2. destroyWindow ('src')
+    cv2. destroyWindow ('dest')
+
+def affCompareCam(cameraCapture):
+    success, frame = cameraCapture.read()
+    while success and cv2.waitKey(1) == -1:
+        cv2.imshow('src', frame)
+        cv2.imshow('dest', convertToGrey(frame))
+        success, frame = cameraCapture.read()
+    cv2.destroyAllWindows()
+
+def main():
+    """
+    Open files as in previous steps, then call the method to convert image or frames to grey scale
+    """
+    mode = input("Input desired mode among (i)mage, (v)ideo or web(c)am: ")
+    if mode in ("image","i"):
+        img_path = input("Input image path: ")
+        img = cv2.imread(img_path)
+        affCompareImg(img, convertToGrey(img))
+    if mode in ("video","v"):
+        cap_path = input("Input capture path: ")
+        cap = cv2.VideoCapture(cap_path)
+        affCompareCap(cap)
+    if mode in ("webcam","c"):
+        cam_id = int(input("Input camera id (0 back cam (principal), 1 front cam and 2 external webcam): "))
+        cameraCapture = cv2.VideoCapture (cam_id)
+        affCompareCam(cameraCapture)
+
+if __name__ == "__main__":
+    main()
+
+```
+##### Exemple d'exécution
+![[Gray_manual.png]]
+#### 3. Conversion par OpenCV
+#### 4. Commentaires
+##### Code commenté
+```Python
+"""
+Edited by Jules LELAY
+5I-IN7
+January 2023
+
+Second script of the unit, converting an RGB image to a grayscale one with OpenCV cvtColor
+"""
+import cv2
+
+def convertToGrey(img):
+    dest = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    return dest
+
+def affCompareImg(src, dest):
+    cv2.imshow("src",src)
+    cv2.imshow("dest",dest)
+    cv2.waitKey(0)
+    cv2.destroyWindow("src")
+    cv2.destroyWindow("dest")
+
+def affCompareCap(src):
+    while True:
+        success, img = src.read()
+        cv2.imshow("src", img)
+        cv2.imshow("dest",convertToGrey(img))
+        if cv2.waitKey(1) == ord('q'):
+            break
+    cv2. destroyWindow ('src')
+    cv2. destroyWindow ('dest')
+
+def affCompareCam(cameraCapture):
+    success, frame = cameraCapture.read()
+    while success and cv2.waitKey(1) == -1:
+        cv2.imshow('src', frame)
+        cv2.imshow('dest', convertToGrey(frame))
+        success, frame = cameraCapture.read()
+    cv2.destroyAllWindows()
+
+def main():
+    """
+    Open files as in previous steps, then call the method to convert image or frames to grey scale
+    """
+    mode = input("Input desired mode among (i)mage, (v)ideo or web(c)am: ")
+    if mode in ("image","i"):
+        img_path = input("Input image path: ")
+        img = cv2.imread(img_path)
+        affCompareImg(img, convertToGrey(img))
+    if mode in ("video","v"):
+        cap_path = input("Input capture path: ")
+        cap = cv2.VideoCapture(cap_path)
+        affCompareCap(cap)
+    if mode in ("webcam","c"):
+        cam_id = int(input("Input camera id (0 back cam (principal), 1 front cam and 2 external webcam): "))
+        cameraCapture = cv2.VideoCapture (cam_id)
+        affCompareCam(cameraCapture)
+
+if __name__ == "__main__":
+    main()
+
+```
+##### Exemple d'exécution
+![[Gray_auto.png]]
+Les rendus sont similaires, mais la méthode manuelle est plus sombre.
 ### Convolution d'images
-#### 5.
-#### 6.
-#### 7.
-#### 8.
+#### 5. Convolution manuelle
+#### 6. Commentaires
+##### Code commenté
+```Python
+"""
+Edited by Jules LELAY
+5I-IN7
+January 2023
+
+Second script of the unit, converting an RGB image to a grayscale one manually
+"""
+import cv2
+import numpy as np
+
+def convolute(img):
+    dest = np.zeros((len(img),len(img[0]),3),np.uint8) # Création d'une image noire
+    for i in range(len(dest)):
+        for j in range(len(dest[0])):
+            for c in range(3): # for each pixel, for each channel, apply average filter
+                moy = 0
+                n = 0
+                for x in range(-2,3):
+                    for y in range(-2,3):
+                       if i+x in range(len(img)) and j+y in range(len(img[0])):
+                           moy += img[i+x][j+y][c]
+                           n += 1
+                moy /= n
+                dest[i][j][c] = moy
+    return dest
+
+def affCompareImg(src, dest):
+    cv2.imshow("src",src)
+    cv2.imshow("dest",dest)
+    cv2.waitKey(0)
+    cv2.destroyWindow("src")
+    cv2.destroyWindow("dest")
+
+def affCompareCap(src):
+    while True:
+        success, img = src.read()
+        cv2.imshow("src", img)
+        cv2.imshow("dest",convolute(img))
+        if cv2.waitKey(1) == ord('q'):
+            break
+    cv2. destroyWindow ('src')
+    cv2. destroyWindow ('dest')
+
+def affCompareCam(cameraCapture):
+    success, frame = cameraCapture.read()
+    while success and cv2.waitKey(1) == -1:
+        cv2.imshow('src', frame)
+        cv2.imshow('dest', convolute(frame))
+        success, frame = cameraCapture.read()
+    cv2.destroyAllWindows()
+
+def main():
+    """
+    Open files as in previous steps, then call the method to convert image or frames to grey scale
+    """
+    mode = input("Input desired mode among (i)mage, (v)ideo or web(c)am: ")
+    if mode in ("image","i"):
+        img_path = input("Input image path: ")
+        img = cv2.imread(img_path)
+        affCompareImg(img, convolute(img))
+    if mode in ("video","v"):
+        cap_path = input("Input capture path: ")
+        cap = cv2.VideoCapture(cap_path)
+        affCompareCap(cap)
+    if mode in ("webcam","c"):
+        cam_id = int(input("Input camera id (0 back cam (principal), 1 front cam and 2 external webcam): "))
+        cameraCapture = cv2.VideoCapture (cam_id)
+        affCompareCam(cameraCapture)
+
+if __name__ == "__main__":
+    main()
+
+```
+##### Exemple d'exécution
+![[Convolution_manual.png]]
+#### 7. Convolution par OpenCV
+#### 8. Commentaires
+##### Code commenté
+```Python
+"""
+Edited by Jules LELAY
+5I-IN7
+January 2023
+
+Second script of the unit, converting an RGB image to a grayscale one manually
+"""
+import cv2
+
+def convolute(img):
+    dest = cv2.blur(img, (5,5))
+    return dest
+
+def affCompareImg(src, dest):
+    cv2.imshow("src",src)
+    cv2.imshow("dest",dest)
+    cv2.waitKey(0)
+    cv2.destroyWindow("src")
+    cv2.destroyWindow("dest")
+
+def affCompareCap(src):
+    while True:
+        success, img = src.read()
+        cv2.imshow("src", img)
+        cv2.imshow("dest",convolute(img))
+        if cv2.waitKey(1) == ord('q'):
+            break
+    cv2. destroyWindow ('src')
+    cv2. destroyWindow ('dest')
+
+def affCompareCam(cameraCapture):
+    success, frame = cameraCapture.read()
+    while success and cv2.waitKey(1) == -1:
+        cv2.imshow('src', frame)
+        cv2.imshow('dest', convolute(frame))
+        success, frame = cameraCapture.read()
+    cv2.destroyAllWindows()
+
+def main():
+    """
+    Open files as in previous steps, then call the method to convert image or frames to grey scale
+    """
+    mode = input("Input desired mode among (i)mage, (v)ideo or web(c)am: ")
+    if mode in ("image","i"):
+        img_path = input("Input image path: ")
+        img = cv2.imread(img_path)
+        affCompareImg(img, convolute(img))
+    if mode in ("video","v"):
+        cap_path = input("Input capture path: ")
+        cap = cv2.VideoCapture(cap_path)
+        affCompareCap(cap)
+    if mode in ("webcam","c"):
+        cam_id = int(input("Input camera id (0 back cam (principal), 1 front cam and 2 external webcam): "))
+        cameraCapture = cv2.VideoCapture (cam_id)
+        affCompareCam(cameraCapture)
+
+if __name__ == "__main__":
+    main()
+
+```
+##### Exemple d'exécution
+![[Convolution_auto.png]]
+##### Remarques
+Que la méthode soit manuelle ou à l'aide des librairies OpenCV, le résultat semble en tout point similaire.
