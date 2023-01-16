@@ -29,10 +29,10 @@ def SVM(M, V, T, k, c):
 	
 	if M[k][c] > M[k-1][c]:
 		S = SVM(M, V, T, k-1, c-T[k-1])
-		res = "objet_" + str(k) + "(" + str(V[k-1]) + ", " + str(T[k-1]) + ")"
+		svm = "objet_" + str(k) + "(" + str(V[k-1]) + ", " + str(T[k-1]) + ")"
 		if S :
-			res += ", " + S
-		return res
+			svm += ", " + S
+		return svm
 	
 	return SVM(M, V, T, k-1, c)
 

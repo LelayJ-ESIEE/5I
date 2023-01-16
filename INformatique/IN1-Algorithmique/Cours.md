@@ -61,4 +61,45 @@ bp(0,0) vrai, bp(0,e) faux sinon
 bp(k,e) = bp(k-1, |e±p<sub>i</sub>|)
 
 ### Résolution
+#### Solution du cours
 ![[probleme2.py]]
+
+#### Solution personnelle
+![[probleme2_perso.py]]
+
+# Cours 2
+12/01/2023, 13:00–17:00
+
+## Le troisième problème
+### Énoncé
+Répartition optimale d'un stock
+
+n entrepôts, S produits à répartir sur les n entrepôts.
+
+∀i entrepôt, ∀s stock, g(i,s) : gain obtenu en livrant s à i 
+
+Objectif : maximiser G = ∑g(i,s)
+
+### Solution 1
+Algorithme exhaustif : calculer les combinaisons.
+Complexité en O(n!/(p!(n-p)!))
+
+### Solution 2
+Algorithme glouton : Pour chaque s de S, prendre la meilleure augmentation de G
+
+### Solution 3
+Perso : *Parti sur m(n, S-1)* => X
+#### Généralisation
+m(n,S) gain total d'une répartition optimale de S sur les n-premiers entrepôts
+On notera s' la quantité de stock donnée au dernier entrepôt.
+
+Passage par m(n-1, S)
+
+Arrive au n-ième entrepôt : peut livrer entre 0 et S
+=> max(g(n-1,0)+m(n-1,S) ; g(n-1,1)+m(n-1,S-1) ; ... ; g(n-1,S)+m(n-1,0))
+
+#### Résolution
+![[probleme3.py]]
+
+## Le quatrième problème
+### Énoncé
