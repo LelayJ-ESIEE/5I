@@ -5,7 +5,7 @@ def calculerBP(C):
 
 	for k in range(0, len(C)):
 		for e in range(0,P+1):
-			print("here")
+			#print("here")
 			if(BP[k][e]):
 				# Optimiser !
 				BP[k+1][e+C[k]] = True
@@ -42,7 +42,7 @@ def main():
 	# C = [0,1,2,3,4,0,5,6,7,8]
 	# C = [2,2,3,1]
 	# C = [1,1,1,2,3]
-	C = [i for i in range(100)]
+	C = list(range(500))
 	
 	BP = calculerBP(C)
 

@@ -1,37 +1,37 @@
-from probleme2 import TEM
+# from probleme2 import TEM
 
-def evaluerBP(BP, C, k, e): # TODO : List(List) -> List(Set())
-	print("here")
-	if k >= len(C) : return
-	# for next_e in [e+C[k], abs(e-C[k])] :
-	if BP[k+1][e+C[k]] != True:
-		BP[k+1][e+C[k]] = True
-		evaluerBP(BP, C, k+1, e+C[k])
-	if BP[k+1][abs(e-C[k])] != True:
-		BP[k+1][abs(e-C[k])] = True
-		evaluerBP(BP, C, k+1, abs(e-C[k]))
+def evaluerBP(BP, C, k, e):
+    if k >= len(C) : return
+    if not e+C[k] in BP[k+1] :
+        BP[k+1].add(e+C[k])
+        evaluerBP(BP, C, k+1, e+C[k])
+    if not abs(e-C[k]) in BP[k+1]:
+        BP[k+1].add(abs(e-C[k]))
+        evaluerBP(BP, C, k+1, abs(e-C[k]))
 
 def calculerBP(C):
-	P = sum(C)
-	BP = [[False]*(P+1) for k in range(len(C)+1)]
-	BP[0][0] = True
+    BP = [set() for k in range(len(C)+1)]
+    BP[0].add(0)
+    print(BP)
 
-	evaluerBP(BP, C, 0, 0)
-	
-	return BP
+    evaluerBP(BP, C, 0, 0)
+    print(BP)
+
+    return BP
 
 def main():
-	# C = [0,1,2,3,4,0,5,6,7,8]
-	# C = [2,2,3,1]
-	# C = [1,1,1,2,3]
-	C = [i for i in range(100)]
-	
-	BP = calculerBP(C)
+    # C = [0,1,2,3,4,0,5,6,7,8]
+    # C = [2,2,3,1]
+    # C = [1,1,1,2,3]
+    # C = list(range(986))
+    C = list(range(500))
 
-# 	for l in BP:
-# 		print(l)
+    BP = calculerBP(C)
 
-	# print(TEM(C, BP))
+#     for l in BP:
+#         print(l)
+
+    # print(TEM(C, BP))
 
 if __name__ == "__main__":
-	main()
+    main()
