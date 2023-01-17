@@ -1,22 +1,14 @@
 # from probleme2 import TEM
 
-def evaluerBP(BP, C, k, e):
-    if k >= len(C) : return
-    if not e+C[k] in BP[k+1] :
-        BP[k+1].add(e+C[k])
-        evaluerBP(BP, C, k+1, e+C[k])
-    if not abs(e-C[k]) in BP[k+1]:
-        BP[k+1].add(abs(e-C[k]))
-        evaluerBP(BP, C, k+1, abs(e-C[k]))
-
 def calculerBP(C):
     BP = [set() for k in range(len(C)+1)]
     BP[0].add(0)
-    print(BP)
-
-    evaluerBP(BP, C, 0, 0)
-    print(BP)
-
+    for k in range(len(C)):
+        for e in BP[k]:
+            next_k = k+1
+            for next_e in [e+C[k], abs(e-C[k])]:
+                if not next_e in BP[next_k]:
+                    BP[next_k].add(next_e)
     return BP
 
 def main():
