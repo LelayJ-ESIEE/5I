@@ -236,7 +236,150 @@ Critère d'utilité économique : les informations sont toujours identifiées pa
 ### Combinaison Brevet-Secret
 Possibilité de déposer un brevet lacunaire (reproduire, mais pas de la meilleure des façons)
 
+# TD5
+07/03/2023, 17:00–19:00
+
 ## La protection des logiciels
+
+### Le droit d'auteur
+
+#### Définition
+
+Protège les œuvres de l'esprit indépendamment de toute divulgation publique du seul fait de sa création
+
+Exemples :
+* œuvres littéraires
+* œuvres artistiques
+* œuvres musicales
+* œuvres audiovisuelles
+* etc.
+
+#### Conditions
+
+**Expression** d'une idée **originale**
+
+L'originalité est la seule condition.
+⚠️ "Les idées sont libres de libre parcours"
+
+Est originale un œuvre qui :
+* porte l'empreinte de la personnalité de son auteur
+* exprime la personnalité de son auteur
+* résulte d'un effort de création
+
+⚠️ Difficulté d'appréciation du critère d'originalité : le pouvoir souverain du juge du fond
+
+#### Obtention
+Obtenue automatiquement à la création de l'œuvre.
+
+⚠️ Nécessité de pouvoir prouver la date de création de l'œuvre :
+* Constat d'huissier ou de notaire
+* Dépôt auprès d'une société d'auteurs
+* Enveloppe Soleau
+* Cahier de laboratoire
+* Dépôt auprès de l'**Agence pour la Protection des Programmes** (APP)
+
+#### Droits conférés
+##### Droits moraux
+* Droit de divulgation (lié à la liberté d'expression)
+* Droit au nom : nom mentionné lors de la diffusion de l'œuvre
+* Droit de repentir et de retrait : droit de regretter une œuvre et de demander le retrait de l'œuvre
+
+Les droits moraux sont rattachés à l'auteur puis à ses ayants droits. Ils sont incessibles (pas de transfert/vente), perpétuels et imprescriptible.
+
+##### Droits patrimoniaux
+* Droit de reproduction
+* Droit de représentation
+
+Les droits patrimoniaux sont cessibles et limités dans le temps. Leur protection dure jusqu'à 70 ans après le décès du créateur.
+
+Pour les œuvres de collaboration (groupe sans initiateur/commandeur), les œuvres collectives (groupe avec initiateur/commandeur) et les œuvres anonymes, la protection court à compter de la divulgation de l'œuvre.
+
+L'œuvre entre ensuite dans le domaine publique, quiconque peut en faire l'utilisation qu'il souhaite.
+
+### La protection du logiciel
+En droit de la Propriété Intellectuelle, on entend programme et logiciel dans le même sens : une suite d'instructions données à un système informatique.
+
+#### Historique de la protection
+50'-60' : pas de protection car considéré comme un accessoire du matériel
+70' : Prise en compte de la valeur économique du logiciel en tant que tel, ouverture du débat sur le mode de protection (brevet, droit d'auteur, sui generis)
+80' : Choix du droit d'auteur "tempéré" --> possibilité de breveter le logiciel brevetabilité d'une "invention mise en œuvre par ordinateur"
+
+#### La protection par le droit d'auteur
+Le critère d'originalité est jugée sur le code source
+
+##### Titularité des droits
+Droit d'auteur classique : L'auteur demeure titulaire des droits, sauf cession à un employeur pour les droits patrimoniaux
+
+Droit d'auteur spécifique : L'auteur demeure titulaire des droits moraux, l'employeur détient les droits patrimoniaux le cas échéant
+
+##### Les droits
+###### Droits moraux
+* Droit au nom (ou paternité)
+* Droit de divulgation
+* Droit au respect de l'intégrité de l'œuvre
+* Droit de repentir et de retrait
+
+Deux derniers droits difficiles à appliquer dans le domaine des créations numériques.
+
+###### Droits patrimoniaux
+* Droit d'auteur classique :
+	* Droit de reproduction
+	* Droit de représentation
+
+* Droit de reproduction
+	* Fixation matérielle de l'oeuvre
+	* Communication au publique
+	* Droit d'autoriser et d'interdire
+* Droit d'adaptation
+	* Modification
+	* Traduction
+	* Arrangement
+* Droit de distribution
+	* Mise sur le marché (à titre onéreux ou gratuit)
+	* Principe d'épuisement des droits : un seul exercice du droit de distribution
+
+##### Titularité des droits
+* Auteur salarié
+* Auteur non salarié :
+	* Stagiaire
+	* Travailleur temporaire
+	* Inconnu
+
+* Oeuvre future (Art L131-1 CPI) : éviter la cession globale, signer une cession future que si celle-ci est déterminable précisément
+* Mettre en place une cession écrite avec mention des droits cédés par domaine, destination, territoire et durée (Art L131-3 CPI)
+
+##### Dépôts
+Quand faire le dépôt ?
+* Le logiciel est à maturité
+	* Possibilité d'utilisation en dehors de l'équipe de développement
+	* Connaissance antérieur dans une collaboration
+* Avant toute diffusion
+* Arrivée ou départ d'un auteur (selon le statut)
+* Nouvelle version d'un logiciel
+
+Organisation des dépôts :
+* Déclaration de Logiciel
+* Remise des sources, exécutables et documentations au service de valorisation
+* Dépôt effectué par le service de valorisation sur Interdeposit
+* Discussion des modalités de transfert
+* Diffusion et/ou transfert de technologie (filiale de valorisation)
+
+#### La protection par le brevet
+##### Historique de la brevetabilité : une protection évolutive
+80'–2000' :
+* Non brevetabilité des logiciels en tant que tels
+* Volonté des éditeurs et développeurs pour la brevetabilité
+* Recherche d'un équilibre : invention mise en œuvre par ordinateur
+
+Aujourd'hui, de nombreux secteurs économiques s'appuient sur les brevets pour couvrir des produits avec des composants logiciels (traitement du signal et d'images...)
+
+*  Évolution vers des critères d'activité inventive en Europe prenant en compte les caractéristiques techniques :
+  L'Office Européen des Brevets (OEB) considère un algorithme intégré au sein d'une invention brevetable peut bénéficier d'une protection par le droit des brevets à la condition qu'il y ait une contribution au caractère technique de l'invetion dans son ensemble
+* Aux USA :
+	* Grande libéralité durant les années 1990
+	* Coup de frein à la fin des années 2000 ([2014, Alice Corp. v. CLS Bank International](https://wipo.int/wipo_magazine/fr/2014/04/article_0004.html))
+	* Rapprochement entre les conceptions américaines et européenne
+
 
 ## La protection des bases de données
 
