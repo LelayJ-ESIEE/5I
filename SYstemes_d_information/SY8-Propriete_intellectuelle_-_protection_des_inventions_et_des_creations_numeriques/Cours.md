@@ -380,6 +380,16 @@ Aujourd'hui, de nombreux secteurs économiques s'appuient sur les brevets pour c
 	* Coup de frein à la fin des années 2000 ([2014, Alice Corp. v. CLS Bank International](https://wipo.int/wipo_magazine/fr/2014/04/article_0004.html))
 	* Rapprochement entre les conceptions américaines et européenne
 
+# TD6
+09/03/2023, 17:00–19:00
+
+[Interview d'Alexandre Lebkiri](https://www.inpi.fr/valoriser-vos-actifs/le-mag/protection-des-logiciels-le-droit-des-brevets-est-il-toujours-adapte) résumant efficacement la situation
+
+##### Brevetabilité du logiciel
+###### Exemples de "brevets logiciels"
+FR3099674
+FR3099265
+FR3103047
 
 ## La protection des bases de données
 
