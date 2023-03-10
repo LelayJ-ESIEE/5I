@@ -387,9 +387,68 @@ Aujourd'hui, de nombreux secteurs économiques s'appuient sur les brevets pour c
 
 ##### Brevetabilité du logiciel
 ###### Exemples de "brevets logiciels"
-FR3099674
+[FR3099674](https://data.inpi.fr/brevets/FR3099674)
+[FR3022391](https://data.inpi.fr/brevets/FR3022391?q=#FR3022391)
 FR3099265
 FR3103047
+
+# TD7
+10/03/2023, 18:30–20:00
+
+### Logiciel Libre vs Propriétaire
+
+#### Logiciel Propriétaire
+\[...]
+
+#### Logiciel Libre
+4 libertés définies par Richard Stallman en 1985 :
+* Liberté d'exécuter le programme.
+* Liberté d'étudier le fonctionnement du programme (accès au code source)
+* Liberté de le diffuser et de le distribuer
+* Liberté de modifier le programme
+
+⚠️ Préjugés. Libre n'est pas :
+* Gratuit
+* Libre de droit ou domaine public
+* Pas de propriétaire
+
+2 Écoles fondatrices
+* Philosophie libre : Sallman (liberté)
+* Philosophie Open Source :
+	* Open Source Initiative propose 10 critères en 19998
+	* Efficacité
+
+Un vocabulaire particulier :
+* Copyleft : « L'idée centrale du _copyleft_ est de donner à quiconque la permission d'exécuter le programme, de le copier, de le modifier, et d'en distribuer des versions modifiées - mais pas la permission d'ajouter des restrictions de son cru. C'est ainsi que les libertés cruciales qui définissent le logiciel libre sont garanties pour quiconque en possède une copie ; elles deviennent des droits inaliénables. »
+	* Obligation de redistribuer le code initial et modifié sous la même licence ou sous une licence compatible
+	* Marque philosophique très forte
+	* \[...]
+* Dérivation
+* Composition
+* Permissive vs Non permissive
+* GPL, LGPL, BSD, MIT... : noms de licenses
+
+On parle aujourd'hui de FOSS Free & Open Source Software
+
+##### Catégorisation des licences libres
+* Copyleft fort
+	* Obligation de réciprocité : diffuser les œuvres dérivées sous la même licence
+	* ex : GPL (General Public Licence)
+* Copyleft faible
+	* Permet de combiner le code avec un code d'une autre licence
+	* ex : LGPL (Lesser General Public Licence)
+* Non-copyleft
+	* Licence permissive qui permet une très large diffusion
+	* ex : MIT, BSD, APACHE
+
+##### Opportunité de protection ?
+* Protégeable par le droit d'auteur u même titre que le logiciel propriétaire
+* Concession de droits étendus aux utilisateurs
+* Pas de renonciation de l'auteur aux droits de PI
+* Opportunité de faire un dépôt APP pour :
+	* Apporter la preuve d'une contrefaçon en cas de non respect des termes de la licence
+	* Prouver la date de création et démontrer la détention de l'antériorité
+	* Retracer l'évolution de la création
 
 ## La protection des bases de données
 
