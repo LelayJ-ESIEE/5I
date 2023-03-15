@@ -20,3 +20,12 @@ Groupe : Lucie DESRIAUX, Rui SUN, Jules LELAY, Kenza SIFOUANE...
 
 8. Licence non propre à un produit
 9. Licence non limitatrice d'autres logiciels
+
+## Correction
+
+|Liberté du logiciel selon la FSF|Critère de l'OSD|
+|-|-|
+|(0) Exécution du programme dans n'importe quel but|5. Non-discrimination des personnes ou groupes particuliers <br>6. Non-discrimination des domaines d'application|
+|(1) Étude et adaptation|2. Code source<br>(3. Œuvre dérivées)|
+|(2) Redistribution|1. Liberté de redistribution<br>7. Distribution de la licence<br>(3. Œuvre dérivées)|
+|(3) Amélioration et publication des améliorations|3. Œuvre dérivées<br>1. Liberté de redistribution|
