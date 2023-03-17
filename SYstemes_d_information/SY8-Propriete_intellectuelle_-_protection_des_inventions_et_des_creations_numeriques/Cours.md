@@ -450,6 +450,19 @@ On parle aujourd'hui de FOSS Free & Open Source Software
 	* Prouver la date de création et démontrer la détention de l'antériorité
 	* Retracer l'évolution de la création
 
+# TD9
+17/03/2023, 13:00–14:30
 ## La protection des bases de données
+
+### Définition
+Base de donnée : "recueil d'œuvres, de données ou d'autres éléments indépendants, disposés de manière systématique ou méthodique, et individuellement accessibles par des moyens électroniques ou par tout autre" (article L112-3 du CPI)
+
+Ensemble structuré et organisé d'informations
+
+Composée de deux types d'éléments :
+* Données : contenu de la base (représentation d'une information)
+* Architecture de la base : contenant (manière d'organisation des données)
+
+\[...\] Voir slides --> Conditions de protection
 
 ## La protection des sites web
