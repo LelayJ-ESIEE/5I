@@ -1,3 +1,6 @@
 [submodule "Ingenierie_Graphique/IG2-Traitement_flux_video/Projet-vision-ordi"]
 	path = Ingenierie_Graphique/IG2-Traitement_flux_video/Projet-vision-ordi
 	url = git@github.com:BenoitBad/Projet-vision-ordi.git
+[submodule "SYstemes_d_information/SY3-Virtualisation/src"]
+	path = SYstemes_d_information/SY3-Virtualisation/src
+	url = https://github.com/LelayJ-ESIEE/quiz-app-rattrapage
