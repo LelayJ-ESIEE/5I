@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  labels:
+    app: mariadb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      securityContext:
+        fsGroup: 2000 
+      containers:
+      - name: quiz-app-api
+        image: lelayj/quiz-app-db:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3306

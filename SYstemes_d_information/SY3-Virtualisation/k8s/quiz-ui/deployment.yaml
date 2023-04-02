@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vuejs
+  labels:
+    app: vuejs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vuejs
+  template:
+    metadata:
+      labels:
+        app: vuejs
+    spec:
+      securityContext:
+        fsGroup: 2000 
+      containers:
+      - name: quiz-app-ui
+        image: lelayj/quiz-app-ui:1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
