@@ -1,6 +1,5 @@
 from question import Question
-# import sqlite3
-import mariadb
+import sqlite3
 import time
 
 class NonExistingObjectError(Exception):
@@ -19,15 +18,8 @@ class DBHelper:
 	def __init__(self):
 		db_connection = None
 		try:
-			# db_connection = sqlite3.connect("../quiz-db.db")
-			# db_connection.isolation_level = None
-			db_connection = mariadb.connect(
-				host='127.0.0.1',
-				port= 3306,
-				user='root',
-				password='Secret+++++++++',
-				database='QuizDB'
-			)
+			db_connection = sqlite3.connect("../quiz-db.db")
+			db_connection.isolation_level = None
 		except Exception as e:
 			print(e)
 			raise
