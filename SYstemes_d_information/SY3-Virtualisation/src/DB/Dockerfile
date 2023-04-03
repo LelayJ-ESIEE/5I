@@ -6,4 +6,6 @@ ENV PACKAGES openssh-server openssh-client
 ENV MARIADB_ROOT_PASSWORD="Secret+++++++++"
 ENV MYSQL_DATABASE="QuizDB"
 
+EXPOSE 5000
+
 COPY ./init_db.sql /docker-entrypoint-initdb.d/init_db.sql

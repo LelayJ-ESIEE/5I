@@ -30,16 +30,20 @@ docker tag quiz-app-db lelayj/quiz-app-db:1.0
 docker push lelayj/quiz-app-db:1.0
 ```
 
-![Dockerhub](Dockerhub.png)
+![Dockerhub](imgs/Dockerhub.png)
 
 Démarrage de minikube et déploiement des services.
-Pods : ![Deployed Pods](pods.png)
-Services : ![Deployed Services](services.png)
+Pods : ![Deployed Pods](imgs/pods.png)
+Services : ![Deployed Services](imgs/services.png)
 
 ### Étape 2 : Communication entre les services
+En cours
 
 ### Étape 3 : Ajout d'une gateway au cluster
+Ajout de l'ingress : En cours
 
 ### Étape 4 : Ajout de la base de donnée
+Voir étape 1, DB
 
-### Étape : Déploiement chez un Cloud Provider
+### Étape 5 : Déploiement chez un Cloud Provider
+Déploiement sur une machine Oracle en cours
