@@ -1,0 +1,1 @@
+correction Task 1: Sketch the signals in a) over three periods of the first gear (i.e. from t=0 to t=3*T1). Comment the result.
