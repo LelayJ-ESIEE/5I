@@ -2,12 +2,21 @@ sudoku(PreRemplies, S) :-
 	/* Preremplies est la liste des cases initialement remplies, 
 	S est une grille remplie (résultat de la démonstration du but.) */
 	grille(G0), /* G0 est une grille. Pour chaque case, les 9 valeurs possibles.*/
-	enleverPreRemplies(PreRemplies, G0, G1), /* <-- à écrire 
+	enleverPreRemplies(PreRemplies, G0, G1),
+	reduireParPreRemplies(PreRemplies, G1, G),
+	resoudre(G, PreRemplies, S).
+
+enleverPreRemplies(PreRemplies, G0, G1) :- /* <-- à écrire 
 	G1 est l'ensemble des cases de G0 desquelles les pré-remplies ont été retirées */
-	reduireParPreRemplies(PreRemplies, G1, G), /* <-- à écrire 
+	.
+
+reduireParPreRemplies(PreRemplies, G1, G) :- /* <-- à écrire 
 	réduction des domaines des cases de G1 en fonction des valeurs des cases pré-remplies */
-	resoudre(G, PreRemplies, S). /* <-- à écrire
-	S est une grille dont toutes les cases ont été remplies (une valeur par case) */    
+	.
+
+resoudre(G, PreRemplies, S) :- /* <-- à écrire
+	S est une grille dont toutes les cases ont été remplies (une valeur par case) */
+	.
 
 grille(Grille) :- setof(V, between(1,9,V), Dij), /* Dij=[1,2,...,9] */
   setof(case(9,I,J,Dij), (between(1,9,I), between(1,9,J)), Grille). 
