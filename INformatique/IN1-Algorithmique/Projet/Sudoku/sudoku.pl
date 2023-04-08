@@ -8,7 +8,10 @@ sudoku(PreRemplies, S) :-
 
 enleverPreRemplies(PreRemplies, G0, G1) :-
 	/* G1 est l'ensemble des cases de G0 desquelles les pré-remplies ont été retirées */
-	true.
+	findall(case(9, I, J, Dij), (
+        member(case(9, I, J, Dij), G0),
+        \+ member(case(1, I, J, _), PreRemplies)
+    ), G1).
 
 reduireParPreRemplies(PreRemplies, G1, G) :-
 	/* réduction des domaines des cases de G1 en fonction des valeurs des cases pré-remplies */
@@ -52,7 +55,7 @@ Please run ?- license. for legal details.
 For online help and background, visit https://www.swi-prolog.org
 For built-in help, use ?- help(Topic). or ?- apropos(Word).
 
-?- [complement].
+?- [sudoku].
 true.
 
 ?- grille(G), afficherGrille(G).
@@ -80,6 +83,13 @@ G = [case(9, 1, 1, [1, 2, 3, 4, 5, 6, 7|...]), case(9, 1, 2, [1, 2, 3, 4, 5, 6|.
 [1,2,...] 4 [1,2,...] [1,2,...] 1 2 [1,2,...] 7 8 
 9 [1,2,...] 8 [1,2,...] [1,2,...] [1,2,...] [1,2,...] [1,2,...] [1,2,...] 
 G = [case(1, 1, 1, [1]), case(9, 1, 2, [1, 2, 3, 4, 5, 6|...]), case(9, 1, 3, [1, 2, 3, 4, 5|...]), case(9, 1, 4, [1, 2, 3, 4|...]), case(9, 1, 5, [1, 2, 3|...]), case(9, 1, 6, [1, 2|...]), case(9, 1, 7, [1|...]), case(9, 1, 8, [...|...]), case(..., ..., ..., ...)|...].
+
+?- G = [case(1, 1, 1, [1]), case(1, 1, 9, [6]), case(1, 2, 3, [6]), case(1, 2, 5, [2]), case(1, 2, 7, [7]), case(1, 3, 1, [7]), case(1, 3, 2, [8]), case(1, 3, 3, [9]), case(1, 3, 4, [4]), case(1, 3, 5, [5]), case(1, 3, 7, [1]), case(1, 3, 9, [3]), case(1, 4, 4, [8]), case(1, 4, 6, [7]), case(1, 4, 9, [4]), case(1, 5, 5, [3]), case(1, 6, 2, [9]), case(1, 6, 6, [4]), case(1, 6, 7, [2]), case(1, 6, 9, [1]), case(1, 7, 1, [3]), case(1, 7, 2, [1]), case(1, 7, 3, [2]), case(1, 7, 4, [9]), case(1, 7, 5, [7]), case(1, 7, 8, [4]), case(1, 8, 2, [4]), case(1, 8, 5, [1]), case(1, 8, 6, [2]), case(1, 8, 8, [7]), case(1, 8, 9, [8]), case(1, 9, 1, [9]), case(1, 9, 3, [8])],
+grille(G0), enleverPreRemplies(G, G0, G1).
+
+G = [case(1, 1, 1, [1]), case(1, 1, 9, [6]), case(1, 2, 3, [6]), case(1, 2, 5, [2]), case(1, 2, 7, [7]), case(1, 3, 1, [7]), case(1, 3, 2, [8]), case(1, 3, 3, [...]), case(..., ..., ..., ...)|...],
+G0 = [case(9, 1, 1, [1, 2, 3, 4, 5, 6, 7|...]), case(9, 1, 2, [1, 2, 3, 4, 5, 6|...]), case(9, 1, 3, [1, 2, 3, 4, 5|...]), case(9, 1, 4, [1, 2, 3, 4|...]), case(9, 1, 5, [1, 2, 3|...]), case(9, 1, 6, [1, 2|...]), case(9, 1, 7, [1|...]), case(9, 1, 8, [...|...]), case(..., ..., ..., ...)|...],
+G1 = [case(9, 1, 2, [1, 2, 3, 4, 5, 6, 7|...]), case(9, 1, 3, [1, 2, 3, 4, 5, 6|...]), case(9, 1, 4, [1, 2, 3, 4, 5|...]), case(9, 1, 5, [1, 2, 3, 4|...]), case(9, 1, 6, [1, 2, 3|...]), case(9, 1, 7, [1, 2|...]), case(9, 1, 8, [1|...]), case(9, 2, 1, [...|...]), case(..., ..., ..., ...)|...].
 
 ?- G = [case(1, 1, 1, [1]), case(1, 1, 9, [6]), case(1, 2, 3, [6]), case(1, 2, 5, [2]), case(1, 2, 7, [7]), case(1, 3, 1, [7]), case(1, 3, 2, [8]), case(1, 3, 3, [9]), case(1, 3, 4, [4]), case(1, 3, 5, [5]), case(1, 3, 7, [1]), case(1, 3, 9, [3]), case(1, 4, 4, [8]), case(1, 4, 6, [7]), case(1, 4, 9, [4]), case(1, 5, 5, [3]), case(1, 6, 2, [9]), case(1, 6, 6, [4]), case(1, 6, 7, [2]), case(1, 6, 9, [1]), case(1, 7, 1, [3]), case(1, 7, 2, [1]), case(1, 7, 3, [2]), case(1, 7, 4, [9]), case(1, 7, 5, [7]), case(1, 7, 8, [4]), case(1, 8, 2, [4]), case(1, 8, 5, [1]), case(1, 8, 6, [2]), case(1, 8, 8, [7]), case(1, 8, 9, [8]), case(1, 9, 1, [9]), case(1, 9, 3, [8])],
 grille(S), sudoku(G, S), afficherGrille(S).
